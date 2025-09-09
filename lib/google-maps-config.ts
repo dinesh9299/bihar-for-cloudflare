@@ -1,7 +1,7 @@
 // Google Maps configuration and utilities
 
 export const GOOGLE_MAPS_CONFIG = {
-  apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyBK9BuZ3-muEkjTT-KDZD14RAG37do1T3k",
+  apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCN9htaexjSDWMVybqWtlSl1ygNpZWkobg",
   libraries: ["places", "geometry"] as const,
   mapOptions: {
     zoom: 7,

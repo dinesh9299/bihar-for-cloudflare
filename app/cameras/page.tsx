@@ -298,10 +298,10 @@ export default function CamerasPage() {
                       <Download className="w-4 h-4 mr-2" />
                       Export
                     </PillButton>
-                    <PillButton variant="accent" size="sm">
+                    {/* <PillButton variant="accent" size="sm">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Camera
-                    </PillButton>
+                    </PillButton> */}
                   </div>
                 </div>
               </ModernCard>

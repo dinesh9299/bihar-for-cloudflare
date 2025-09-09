@@ -150,12 +150,16 @@ export default function LocationsPage() {
     const response = await axios.get(
       "http://localhost:1337/api/bus-stands?populate=*"
     );
-    const busStandWithIds = response.data.data.map((stand: any) => ({
-      ...stand,
-      division: stand.division?.id?.toString() || "",
-      depot: stand.depot?.id?.toString() || "",
-      busStation: stand.bus_station?.id?.toString() || "",
-    }));
+    const busStandWithIds = response.data.data.map((stand: any) => {
+      const mappedStand = {
+        ...stand,
+        division: stand.division?.id?.toString() || "",
+        depot: stand.depot?.id?.toString() || "",
+        busStation: stand.station?.id?.toString() || "", // Replace with correct field name
+      };
+      // console.log("Mapped Bus Stand:", JSON.stringify(mappedStand, null, 2));
+      return mappedStand;
+    });
     setBusStands(busStandWithIds);
   };
   useEffect(() => {
@@ -306,30 +310,22 @@ export default function LocationsPage() {
           break;
 
         case "bus-stations":
-          if (!formData.division || !formData.depot) {
+          if (!formData.division || !formData.depot || !formData.name) {
             toast({
               variant: "destructive",
               title: "Validation Error",
-              description: "Division and depot are required",
+              description: "Name, division, and depot are required",
             });
             return;
           }
-
-          console.log("busstations", formData);
-
-          // const newBusStation: BusStation = {
-          //   id: newId,
-          //   name: formData.name,
-          //   depot: formData.depot,
-          //   division: formData.division,
-          //   address: formData.address,
-          //   latitude: Number.parseFloat(formData.latitude) || 0,
-          //   longitude: Number.parseFloat(formData.longitude) || 0,
-          //   busStands: 0,
-          //   status: "active",
-          //   facilities: formData.facilities,
-          // };
-          // setBusStations([...busStations, newBusStation]);
+          if (!Array.isArray(formData.facilities)) {
+            toast({
+              variant: "destructive",
+              title: "Validation Error",
+              description: "Facilities must be a valid list",
+            });
+            return;
+          }
 
           const busstationspayload = {
             data: {
@@ -354,12 +350,17 @@ export default function LocationsPage() {
             .then((busstationsres) => {
               if (busstationsres.status === 201) {
                 fetchbusstations();
+                resetForm(); // Reset form after successful creation
               }
-
               console.log("res", busstationsres);
             })
             .catch((err) => {
               console.error(err);
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to create bus station",
+              });
             });
 
           toast({
@@ -367,10 +368,12 @@ export default function LocationsPage() {
             title: "Bus Station Created",
             description: `${formData.name} has been successfully created`,
           });
+          setIsAddDialogOpen(false);
           break;
 
         case "bus-stands":
           if (
+            !formData.name ||
             !formData.platformNumber ||
             !formData.division ||
             !formData.depot ||
@@ -380,48 +383,59 @@ export default function LocationsPage() {
               variant: "destructive",
               title: "Validation Error",
               description:
-                "Platform number, division, depot, and bus station are required",
+                "Name, platform number, division, depot, and bus station are required",
             });
             return;
           }
-          // const newBusStand: BusStand = {
-          //   id: newId,
-          //   name: formData.name,
-          //   platformNumber: formData.platformNumber,
-          //   busStation: formData.busStation,
-          //   depot: formData.depot,
-          //   division: formData.division,
-          //   capacity: Number.parseInt(formData.capacity) || 0,
-          //   status: "active",
-          //   type: formData.type,
-          // };
-          // setBusStands([...busStands, newBusStand]);
 
-          const busstandspayload = {
+          const busStationId = Number.parseInt(formData.busStation);
+          if (!busStationId || isNaN(busStationId)) {
+            toast({
+              variant: "destructive",
+              title: "Validation Error",
+              description: "Invalid bus station selected",
+            });
+            return;
+          }
+
+          const busstandpayload = {
             data: {
               name: formData.name,
               platformNumber: formData.platformNumber,
-              bus_station: formData.busStation,
-              depot: formData.depot,
-              division: formData.division,
+              bus_stations: busStationId, // Use station
+              depot: Number.parseInt(formData.depot) || 0,
+              divisions: Number.parseInt(formData.division) || 0,
               capacity: Number.parseInt(formData.capacity) || 0,
-              type: formData.type,
+              type: formData.type || "",
             },
           };
 
+          console.log(
+            "Bus Stand Payload:",
+            JSON.stringify(busstandpayload, null, 2)
+          );
+
           const busstandres = axios
-            .post("http://localhost:1337/api/bus-stands", busstandspayload, {
+            .post("http://localhost:1337/api/bus-stands", busstandpayload, {
               headers: { "Content-Type": "application/json" },
             })
             .then((busstandres) => {
               if (busstandres.status === 201) {
                 fetchbusstands();
+                resetForm();
+                setIsAddDialogOpen(false);
               }
-
-              console.log("res", busstandres);
+              console.log("Response:", busstandres.data);
             })
             .catch((err) => {
-              console.error(err);
+              console.error("Error:", err.response?.data || err.message);
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description:
+                  err.response?.data?.error?.message ||
+                  "Failed to create bus stand",
+              });
             });
 
           toast({
@@ -447,14 +461,12 @@ export default function LocationsPage() {
     let divisionId = item.division;
     let depotId = item.depot;
 
-    // For bus stations, division and depot may be objects or names
     if (typeof divisionId === "object" && divisionId?.id) {
       divisionId = divisionId.id.toString();
     }
     if (typeof depotId === "object" && depotId?.id) {
       depotId = depotId.id.toString();
     }
-    // If depot is a name, find the id
     if (
       typeof depotId === "string" &&
       depotId &&
@@ -467,12 +479,19 @@ export default function LocationsPage() {
     setEditingItem(item);
     setFormData({
       ...item,
-      division: divisionId,
-      depot: depotId,
+      division: divisionId || "",
+      depot: depotId || "",
+      busStation: item.busStation || "",
       latitude: item.latitude?.toString() || "",
       longitude: item.longitude?.toString() || "",
       capacity: item.capacity?.toString() || "",
-      facilities: item.facilities || [],
+      facilities: Array.isArray(item.facilities)
+        ? item.facilities
+        : item.facilities && typeof item.facilities === "object"
+        ? Object.entries(item.facilities)
+            .filter(([_, value]) => value === true)
+            .map(([key]) => key)
+        : [], // Ensure facilities is string[]
     });
     setIsAddDialogOpen(true);
   };
@@ -644,15 +663,25 @@ export default function LocationsPage() {
             )
           );
 
+          const busStationId = Number.parseInt(formData.busStation);
+          if (!busStationId || isNaN(busStationId)) {
+            toast({
+              variant: "destructive",
+              title: "Validation Error",
+              description: "Invalid bus station selected",
+            });
+            return;
+          }
+
           const busStandpayload = {
             data: {
               name: formData.name,
               platformNumber: formData.platformNumber,
-              bus_station: formData.busStation,
-              depot: formData.depot,
-              division: formData.division,
+              station: busStationId, // Replace with correct field name
+              depot: Number.parseInt(formData.depot) || 0,
+              division: Number.parseInt(formData.division) || 0,
               capacity: Number.parseInt(formData.capacity) || 0,
-              type: formData.type,
+              type: formData.type || "",
             },
           };
 
@@ -666,13 +695,19 @@ export default function LocationsPage() {
             )
             .then((busStandres) => {
               if (busStandres.status === 200) {
-                fetchbusstations();
+                fetchbusstands();
               }
-
               console.log("res", busStandres);
             })
             .catch((err) => {
               console.error(err);
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description:
+                  err.response?.data?.error?.message ||
+                  "Failed to update bus stand",
+              });
             });
 
           toast({
@@ -748,7 +783,7 @@ export default function LocationsPage() {
       description: "",
       contactPerson: "",
       phone: "",
-      facilities: [],
+      facilities: [], // Always reset to empty array
       type: "",
     });
   };
@@ -769,21 +804,19 @@ export default function LocationsPage() {
     if (facility) {
       setFormData((prev) => ({
         ...prev,
-        facilities: {
-          ...prev.facilities,
-          [facility]: true, // mark as enabled
-        },
+        facilities: Array.isArray(prev.facilities)
+          ? [...prev.facilities.filter((f) => f !== facility), facility]
+          : [facility],
       }));
     }
   };
 
-  const removeFacility = (facilityKey: string) => {
+  const removeFacility = (facility: string) => {
     setFormData((prev) => ({
       ...prev,
-      facilities: {
-        ...prev.facilities,
-        [facilityKey]: false, // mark as disabled
-      },
+      facilities: Array.isArray(prev.facilities)
+        ? prev.facilities.filter((f) => f !== facility)
+        : [],
     }));
   };
 
@@ -956,6 +989,8 @@ export default function LocationsPage() {
         );
 
       case "bus-stations":
+        console.log("formData:", formData); // Debug
+        console.log("formData.facilities:", formData.facilities); // Debug
         return (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -979,18 +1014,24 @@ export default function LocationsPage() {
                 <Select
                   value={formData.division}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, division: value })
+                    setFormData({ ...formData, division: value, depot: "" })
                   }
                 >
                   <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl text-base">
                     <SelectValue placeholder="Select division" />
                   </SelectTrigger>
                   <SelectContent>
-                    {divisions.map((div) => (
-                      <SelectItem key={div.id} value={div.id.toString()}>
-                        {div.name}
-                      </SelectItem>
-                    ))}
+                    {divisions.length > 0 ? (
+                      divisions.map((div) => (
+                        <SelectItem key={div.id} value={div.id.toString()}>
+                          {div.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500">
+                        No divisions available
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1003,18 +1044,32 @@ export default function LocationsPage() {
                   onValueChange={(value) =>
                     setFormData({ ...formData, depot: value })
                   }
+                  disabled={!formData.division}
                 >
                   <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl text-base">
                     <SelectValue placeholder="Select depot" />
                   </SelectTrigger>
                   <SelectContent>
-                    {depots
-                      // .filter((d) => d.division === formData.division)
-                      .map((depot) => (
-                        <SelectItem key={depot.id} value={depot.id.toString()}>
-                          {depot.name}
-                        </SelectItem>
-                      ))}
+                    {depots.filter(
+                      (depot) => depot.division === formData.division
+                    ).length > 0 ? (
+                      depots
+                        .filter((depot) => depot.division === formData.division)
+                        .map((depot) => (
+                          <SelectItem
+                            key={depot.id}
+                            value={depot.id.toString()}
+                          >
+                            {depot.name}
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <div className="p-2 text-gray-500">
+                        {formData.division
+                          ? "No depots available for this division"
+                          : "Select a division first"}
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1069,25 +1124,29 @@ export default function LocationsPage() {
                 Facilities
               </Label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {Object.entries(formData.facilities || {})
-                  .filter(([_, value]) => value === true) // ✅ use boolean true
-                  .map(([key]) => (
+                {Array.isArray(formData.facilities) &&
+                formData.facilities.length > 0 ? (
+                  formData.facilities.map((facility) => (
                     <Badge
-                      key={key}
+                      key={facility}
                       className="bg-purple-100 text-purple-800 border-purple-200 text-xs"
                     >
-                      {key}
+                      {facility}
                       <button
                         type="button"
-                        onClick={() => removeFacility(key)}
+                        onClick={() => removeFacility(facility)}
                         className="ml-2 text-purple-600 hover:text-purple-800"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
-                  ))}
+                  ))
+                ) : (
+                  <div className="text-gray-500 text-xs">
+                    No facilities selected
+                  </div>
+                )}
               </div>
-
               <Select onValueChange={addFacility}>
                 <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl text-base">
                   <SelectValue placeholder="Add facilities" />
@@ -1108,7 +1167,6 @@ export default function LocationsPage() {
             </div>
           </div>
         );
-
       case "bus-stands":
         return (
           <div className="space-y-6">
@@ -1148,18 +1206,29 @@ export default function LocationsPage() {
                 <Select
                   value={formData.division}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, division: value })
+                    setFormData({
+                      ...formData,
+                      division: value,
+                      depot: "", // Reset depot when division changes
+                      busStation: "", // Reset bus station when division changes
+                    })
                   }
                 >
                   <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl text-base">
                     <SelectValue placeholder="Select division" />
                   </SelectTrigger>
                   <SelectContent>
-                    {divisions.map((div) => (
-                      <SelectItem key={div.id} value={div.id.toString()}>
-                        {div.name}
-                      </SelectItem>
-                    ))}
+                    {divisions.length > 0 ? (
+                      divisions.map((div) => (
+                        <SelectItem key={div.id} value={div.id.toString()}>
+                          {div.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500">
+                        No divisions available
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1170,20 +1239,38 @@ export default function LocationsPage() {
                 <Select
                   value={formData.depot}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, depot: value })
+                    setFormData({
+                      ...formData,
+                      depot: value,
+                      busStation: "", // Reset bus station when depot changes
+                    })
                   }
+                  disabled={!formData.division} // Disable if no division selected
                 >
                   <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl text-base">
                     <SelectValue placeholder="Select depot" />
                   </SelectTrigger>
                   <SelectContent>
-                    {depots
-                      // .filter((d) => d.division === formData.division)
-                      .map((depot) => (
-                        <SelectItem key={depot.id} value={depot.id.toString()}>
-                          {depot.name}
-                        </SelectItem>
-                      ))}
+                    {depots.filter(
+                      (depot) => depot.division === formData.division
+                    ).length > 0 ? (
+                      depots
+                        .filter((depot) => depot.division === formData.division)
+                        .map((depot) => (
+                          <SelectItem
+                            key={depot.id}
+                            value={depot.id.toString()}
+                          >
+                            {depot.name}
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <div className="p-2 text-gray-500">
+                        {formData.division
+                          ? "No depots available for this division"
+                          : "Select a division first"}
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1196,21 +1283,32 @@ export default function LocationsPage() {
                   onValueChange={(value) =>
                     setFormData({ ...formData, busStation: value })
                   }
+                  disabled={!formData.depot} // Disable if no depot selected
                 >
                   <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl text-base">
                     <SelectValue placeholder="Select bus station" />
                   </SelectTrigger>
                   <SelectContent>
-                    {busStations
-                      // .filter((bs) => bs.depot === formData.depot)
-                      .map((station) => (
-                        <SelectItem
-                          key={station.id}
-                          value={station.id.toString()}
-                        >
-                          {station.name}
-                        </SelectItem>
-                      ))}
+                    {busStations.filter(
+                      (station) => station.depot === formData.depot
+                    ).length > 0 ? (
+                      busStations
+                        .filter((station) => station.depot === formData.depot)
+                        .map((station) => (
+                          <SelectItem
+                            key={station.id}
+                            value={station.id.toString()}
+                          >
+                            {station.name}
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <div className="p-2 text-gray-500">
+                        {formData.depot
+                          ? "No bus stations available for this depot"
+                          : "Select a depot first"}
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1257,7 +1355,6 @@ export default function LocationsPage() {
             </div>
           </div>
         );
-
       default:
         return null;
     }

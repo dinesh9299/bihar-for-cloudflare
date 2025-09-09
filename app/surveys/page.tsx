@@ -73,6 +73,7 @@ interface Survey {
   bus_station: { id: string; name: string };
   bus_stand: { id: string; name: string };
   surveyPurpose: string;
+  locationDetails: string;
   workStatus:
     | "survey-initiated"
     | "in-progress"
@@ -142,6 +143,7 @@ export default function SurveysPage() {
     workStatus: "",
     notes: "",
     cameraDetails: [] as Camera[],
+    locationDetails: "",
     photos: [] as number[],
   });
 
@@ -180,15 +182,20 @@ export default function SurveysPage() {
           id: s.id.toString(),
           documentId: s.documentId,
           surveyName: s.surveyName,
-          division: { id: s.division.id.toString(), name: s.division.name },
+          locationDetails: s.locationDetails,
+          division: {
+            id: s.division?.id.toString() ?? "",
+            name: s.division?.name ?? "",
+          },
           depot: s.depot
             ? { id: s.depot.id.toString(), name: s.depot.name }
             : { id: "", name: "" },
-          bus_station: {
-            id: s.bus_station.id.toString(),
-            name: s.bus_station.name,
-          },
-          bus_stand: { id: s.bus_stand.id.toString(), name: s.bus_stand.name },
+          bus_station: s.bus_station
+            ? { id: s.bus_station.id.toString(), name: s.bus_station.name }
+            : { id: "", name: "" },
+          bus_stand: s.bus_stand
+            ? { id: s.bus_stand.id.toString(), name: s.bus_stand.name }
+            : { id: "", name: "" },
           surveyPurpose: s.surveyPurpose,
           workStatus: s.workStatus,
           notes: s.notes || "",
@@ -228,6 +235,7 @@ export default function SurveysPage() {
       throw error; // Re-throw to be caught by useEffect
     }
   };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "survey-completed":
@@ -250,9 +258,11 @@ export default function SurveysPage() {
     const matchesStatus =
       statusFilter === "all" || survey.workStatus === statusFilter;
     const matchesDivision =
-      divisionFilter === "all" || survey.division.name === divisionFilter;
+      divisionFilter === "all" || survey.division.id === divisionFilter;
     return matchesSearch && matchesStatus && matchesDivision;
   });
+
+  console.log("kjhgf", divisionFilter);
 
   const totalPages = Math.ceil(filteredSurveys.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -317,6 +327,7 @@ export default function SurveysPage() {
       surveyPurpose: survey.surveyPurpose || "",
       workStatus: survey.workStatus || "",
       notes: survey.notes || "",
+      locationDetails: survey.locationDetails || "",
       cameraDetails: survey.cameraDetails.map((c) => ({
         ...c,
         id: c.id?.toString() || "",
@@ -436,20 +447,36 @@ export default function SurveysPage() {
   };
   const handleSaveEdit = async () => {
     try {
-      if (
-        !editFormData.surveyName ||
-        !editFormData.division ||
-        !editFormData.busStation ||
-        !editFormData.busStand ||
-        !editFormData.surveyPurpose ||
-        !editFormData.workStatus
-      ) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "All required fields must be filled",
-        });
-        return;
+      if (editFormData.locationDetails) {
+        if (
+          !editFormData.surveyName ||
+          !editFormData.locationDetails ||
+          !editFormData.surveyPurpose ||
+          !editFormData.workStatus
+        ) {
+          toast({
+            variant: "destructive",
+            title: "Validation Error",
+            description: "All required fields must be filled",
+          });
+          return;
+        }
+      } else {
+        if (
+          !editFormData.surveyName ||
+          !editFormData.division ||
+          !editFormData.busStation ||
+          !editFormData.busStand ||
+          !editFormData.surveyPurpose ||
+          !editFormData.workStatus
+        ) {
+          toast({
+            variant: "destructive",
+            title: "Validation Error",
+            description: "All required fields must be filled",
+          });
+          return;
+        }
       }
 
       if (
@@ -490,30 +517,52 @@ export default function SurveysPage() {
       }
 
       if (editingSurvey) {
-        const payload = {
-          data: {
-            surveyName: editFormData.surveyName,
-            surveyPurpose: editFormData.surveyPurpose,
-            workStatus: editFormData.workStatus,
-            notes: editFormData.notes,
-            division: editFormData.division, // Use string
-            depot: editFormData.depot || null, // Use string or null
-            bus_station: editFormData.busStation, // Use string
-            bus_stand: editFormData.busStand, // Use string
-            cameraDetails: editFormData.cameraDetails.map((camera) => {
-              const { id, ...rest } = camera;
-              return rest;
-            }),
-            photos: photoIds,
-          },
-        };
+        if (editFormData.locationDetails) {
+          const payload = {
+            data: {
+              surveyName: editFormData.surveyName,
+              surveyPurpose: editFormData.surveyPurpose,
+              workStatus: editFormData.workStatus,
+              notes: editFormData.notes,
+              locationDetails: editFormData.locationDetails,
+              cameraDetails: editFormData.cameraDetails.map((camera) => {
+                const { id, ...rest } = camera;
+                return rest;
+              }),
+              photos: photoIds,
+            },
+          };
 
-        console.log("Payload:", payload);
-        const response = await axios.put(
-          `http://localhost:1337/api/surveys/${editingSurvey.documentId}`,
-          payload
-        );
-        console.log("Response:", response.data);
+          console.log("Payload:", payload);
+          const response = await axios.put(
+            `http://localhost:1337/api/surveys/${editingSurvey.documentId}`,
+            payload
+          );
+        } else {
+          const payload = {
+            data: {
+              surveyName: editFormData.surveyName,
+              surveyPurpose: editFormData.surveyPurpose,
+              workStatus: editFormData.workStatus,
+              notes: editFormData.notes,
+              division: editFormData.division, // Use string
+              depot: editFormData.depot || null, // Use string or null
+              bus_station: editFormData.busStation, // Use string
+              bus_stand: editFormData.busStand, // Use string
+              cameraDetails: editFormData.cameraDetails.map((camera) => {
+                const { id, ...rest } = camera;
+                return rest;
+              }),
+              photos: photoIds,
+            },
+          };
+
+          console.log("Payload:", payload);
+          const response = await axios.put(
+            `http://localhost:1337/api/surveys/${editingSurvey.documentId}`,
+            payload
+          );
+        }
 
         await fetchall(); // Refresh data
         setSurveys((prevSurveys) =>
@@ -831,22 +880,22 @@ export default function SurveysPage() {
               transition={{ duration: 0.5, delay: 0.5 }}
             >
               <ModernCard>
-                <div className="space-y-4">
+                <div className="space-y-2 sm:space-y-4">
                   {paginatedSurveys.map((survey, index) => (
                     <motion.div
                       key={survey.documentId}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-lg sm:rounded-2xl hover:bg-white/70 transition-all duration-200"
                     >
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-3 rounded-2xl">
-                          <MapPin className="w-5 h-5 text-white" />
+                      <div className="flex items-center space-x-2 sm:space-x-4 w-full mb-2 sm:mb-0">
+                        <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-1 sm:p-2 rounded-lg sm:rounded-2xl">
+                          <MapPin className="w-4 h-4 sm:w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-1">
-                            <h3 className="font-bold text-gray-900">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-1">
+                            <h3 className="font-bold text-sm sm:text-base text-gray-900">
                               {survey.surveyName}
                             </h3>
                             <Badge
@@ -855,41 +904,41 @@ export default function SurveysPage() {
                               {survey.workStatus.replace("-", " ")}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-700 mb-1">
+                          <p className="text-xs sm:text-sm text-gray-700 mb-1">
                             {survey.bus_station.name}
                           </p>
-                          <div className="flex items-center space-x-6 text-sm text-gray-600">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 text-xs sm:text-sm text-gray-600">
                             <span className="flex items-center space-x-1">
-                              <User className="w-4 h-4" />
+                              <User className="w-3 h-3 sm:w-4 h-4" />
                               <span>{survey.division.name}</span>
                             </span>
                             <span className="flex items-center space-x-1">
-                              <Calendar className="w-4 h-4" />
+                              <Calendar className="w-3 h-3 sm:w-4 h-4" />
                               <span>{survey.id}</span>
                             </span>
                             <span className="flex items-center space-x-1">
-                              <Camera className="w-4 h-4" />
+                              <Camera className="w-3 h-3 sm:w-4 h-4" />
                               <span>{survey.cameraDetails.length} cameras</span>
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                        <div className="text-right w-full sm:w-20 mb-2 sm:mb-0">
+                          <div className="text-xs sm:text-sm font-medium text-gray-900">
                             0%
                           </div>
-                          <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
+                          <div className="w-full sm:w-20 bg-gray-200 rounded-full h-1 sm:h-2 mt-1">
                             <div
-                              className="bg-gradient-to-r from-amber-400 to-yellow-500 h-2 rounded-full"
+                              className="bg-gradient-to-r from-amber-400 to-yellow-500 h-1 sm:h-2 rounded-full"
                               style={{ width: `0%` }}
                             />
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 sm:space-x-2 w-full sm:w-auto">
                           <Link href={`/surveys/${survey.documentId}`}>
                             <PillButton variant="secondary" size="sm">
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-3 h-3 sm:w-4 h-4" />
                             </PillButton>
                           </Link>
                           <PillButton
@@ -897,17 +946,17 @@ export default function SurveysPage() {
                             size="sm"
                             onClick={() => handleEdit(survey)}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3 sm:w-4 h-4" />
                           </PillButton>
                           <PillButton
                             variant="secondary"
                             size="sm"
                             onClick={() => handleDelete(survey)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3 sm:w-4 h-4" />
                           </PillButton>
                           <PillButton variant="secondary" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
+                            <MoreHorizontal className="w-3 h-3 sm:w-4 h-4" />
                           </PillButton>
                         </div>
                       </div>
@@ -915,8 +964,8 @@ export default function SurveysPage() {
                   ))}
                 </div>
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/30">
-                    <div className="text-sm text-gray-600">
+                  <div className="flex flex-col sm:flex-row items-center justify-between mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-white/30">
+                    <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-0">
                       Showing {startIndex + 1} to{" "}
                       {Math.min(
                         startIndex + itemsPerPage,
@@ -924,7 +973,7 @@ export default function SurveysPage() {
                       )}{" "}
                       of {filteredSurveys.length} surveys
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
                       <PillButton
                         variant="secondary"
                         size="sm"
@@ -933,7 +982,7 @@ export default function SurveysPage() {
                         }
                         disabled={currentPage === 1}
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-3 h-3 sm:w-4 h-4" />
                       </PillButton>
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                         (page) => (
@@ -957,23 +1006,23 @@ export default function SurveysPage() {
                         }
                         disabled={currentPage === totalPages}
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-3 h-3 sm:w-4 h-4" />
                       </PillButton>
                     </div>
                   </div>
                 )}
                 {filteredSurveys.length === 0 && (
-                  <div className="text-center py-12">
-                    <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <div className="text-center py-4 sm:py-12">
+                    <MapPin className="w-8 h-8 sm:w-12 h-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
+                    <h3 className="text-sm sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">
                       No surveys found
                     </h3>
-                    <p className="text-gray-600 mb-4">
+                    <p className="text-xs sm:text-base text-gray-600 mb-2 sm:mb-4">
                       Try adjusting your search or filter criteria
                     </p>
                     <Link href="/surveys/new">
-                      <PillButton variant="accent">
-                        <Plus className="w-4 h-4 mr-2" />
+                      <PillButton variant="accent" size="sm">
+                        <Plus className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
                         Create New Survey
                       </PillButton>
                     </Link>
@@ -1111,114 +1160,145 @@ export default function SurveysPage() {
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="division"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        Division *
-                      </Label>
-                      <Select
-                        value={editFormData.division}
-                        onValueChange={(value) =>
-                          setEditFormData({ ...editFormData, division: value })
-                        }
-                      >
-                        <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                          <SelectValue placeholder="Select Division" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {divisions.map((division) => (
-                            <SelectItem key={division.id} value={division.id}>
-                              {division.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
 
-                    <div className="space-y-2">
+                  {editFormData.locationDetails ? (
+                    <div>
                       <Label
-                        htmlFor="depot"
+                        htmlFor="locationDetails"
                         className="text-sm font-medium text-gray-700"
                       >
-                        Depot Name *
+                        Location Details *
                       </Label>
-                      <Select
-                        value={editFormData.depot}
-                        onValueChange={(value) =>
-                          setEditFormData({ ...editFormData, depot: value })
-                        }
-                      >
-                        <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                          <SelectValue placeholder="Select Depot" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {depots.map((depot) => (
-                            <SelectItem key={depot.id} value={depot.id}>
-                              {depot.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="busStation"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        Bus Station *
-                      </Label>
-                      <Select
-                        value={editFormData.busStation}
-                        onValueChange={(value) =>
+                      <Input
+                        id="locationdetails"
+                        value={editFormData.locationDetails}
+                        onChange={(e) =>
                           setEditFormData({
                             ...editFormData,
-                            busStation: value,
+                            locationDetails: e.target.value,
                           })
                         }
-                      >
-                        <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                          <SelectValue placeholder="Select Bus Station" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {busStations.map((station) => (
-                            <SelectItem key={station.id} value={station.id}>
-                              {station.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Enter descriptive survey name"
+                        className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl"
+                        required
+                      />
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="division"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Division *
+                        </Label>
+                        <Select
+                          value={editFormData.division}
+                          onValueChange={(value) =>
+                            setEditFormData({
+                              ...editFormData,
+                              division: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
+                            <SelectValue placeholder="Select Division" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {divisions.map((division) => (
+                              <SelectItem key={division.id} value={division.id}>
+                                {division.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="busStand"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        Bus Stand *
-                      </Label>
-                      <Select
-                        value={editFormData.busStand}
-                        onValueChange={(value) =>
-                          setEditFormData({ ...editFormData, busStand: value })
-                        }
-                      >
-                        <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                          <SelectValue placeholder="Select Bus Stand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {busStands.map((stand) => (
-                            <SelectItem key={stand.id} value={stand.id}>
-                              {stand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="depot"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Depot Name *
+                        </Label>
+                        <Select
+                          value={editFormData.depot}
+                          onValueChange={(value) =>
+                            setEditFormData({ ...editFormData, depot: value })
+                          }
+                        >
+                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
+                            <SelectValue placeholder="Select Depot" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {depots.map((depot) => (
+                              <SelectItem key={depot.id} value={depot.id}>
+                                {depot.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="busStation"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Bus Station *
+                        </Label>
+                        <Select
+                          value={editFormData.busStation}
+                          onValueChange={(value) =>
+                            setEditFormData({
+                              ...editFormData,
+                              busStation: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
+                            <SelectValue placeholder="Select Bus Station" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {busStations.map((station) => (
+                              <SelectItem key={station.id} value={station.id}>
+                                {station.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="busStand"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Bus Stand *
+                        </Label>
+                        <Select
+                          value={editFormData.busStand}
+                          onValueChange={(value) =>
+                            setEditFormData({
+                              ...editFormData,
+                              busStand: value,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
+                            <SelectValue placeholder="Select Bus Stand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {busStands.map((stand) => (
+                              <SelectItem key={stand.id} value={stand.id}>
+                                {stand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </ModernCard>
             </motion.div>

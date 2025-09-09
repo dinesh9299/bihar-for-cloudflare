@@ -74,7 +74,7 @@ export function ModernSidebar() {
       animate={{ width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       id="cursor"
-      className="bg-gradient-to-b from-amber-50 via-orange-50 to-yellow-50 border-r border-white/30 backdrop-blur-md flex flex-col h-screen overflow-y-auto  "
+      className="bg-gradient-to-b from-blue-50 to-green-50 border-r border-white/30 backdrop-blur-md flex flex-col h-screen overflow-y-auto  "
     >
       {/* Header */}
       <div className="p-6 border-b border-white/30">
@@ -114,7 +114,7 @@ export function ModernSidebar() {
       {!isCollapsed && (
         <div className="p-6 border-b border-white/30">
           <Link href="/surveys/new">
-            <PillButton variant="accent" className="w-full">
+            <PillButton className="w-full bg-gradient-to-r from-blue-500 to-blue-500  text-white">
               <Plus className="w-4 h-4 mr-2" />
               New Survey
             </PillButton>
