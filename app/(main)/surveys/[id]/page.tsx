@@ -151,16 +151,7 @@ const SurveyDetailsPage = () => {
         }
       `}</style>
       <div className="flex h-screen">
-        <ModernSidebar />
-
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ModernHeader
-            title="Survey Details"
-            subtitle={`Survey ID: ${surveyId}`}
-            showGPS={true}
-            gpsStatus="connected"
-          />
-
           <div className="p-6 overflow-auto">
             {loading ? (
               <p className="text-gray-500">Loading survey...</p>

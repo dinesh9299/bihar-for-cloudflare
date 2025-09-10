@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json()
+    const { username, password } = await request.json();
 
     // In a real application, you would:
     // 1. Hash the password and compare with stored hash
@@ -19,17 +19,23 @@ export async function POST(request: NextRequest) {
         division: "Pune",
         depot: "Central",
         role: "surveyor",
-      }
+      };
 
       return NextResponse.json({
         success: true,
         user: mockUser,
         token: "mock-jwt-token",
-      })
+      });
     }
 
-    return NextResponse.json({ success: false, message: "Invalid credentials" }, { status: 401 })
+    return NextResponse.json(
+      { success: false, message: "Invalid credentials" },
+      { status: 401 }
+    );
   } catch (error) {
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
+    return NextResponse.json(
+      { success: false, message: "Server error" },
+      { status: 500 }
+    );
   }
 }

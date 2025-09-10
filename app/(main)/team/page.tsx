@@ -120,14 +120,14 @@ export default function TeamPage() {
   return (
     <PageLayout>
       <div className="flex h-screen">
-        <ModernSidebar />
+        {/* <ModernSidebar /> */}
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ModernHeader
+          {/* <ModernHeader
             title="Team Management"
             subtitle="Manage users and their roles"
             showGPS={false}
-          />
+          /> */}
 
           <main className="flex-1 overflow-y-auto p-6">
             {/* Stats */}

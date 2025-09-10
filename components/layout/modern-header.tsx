@@ -1,7 +1,17 @@
 "use client";
+
 import { Badge } from "@/components/ui/badge";
 import axios from "axios";
-import { Search, Bell, Settings, User, Wifi, WifiOff } from "lucide-react";
+import {
+  Search,
+  Bell,
+  Settings,
+  User,
+  Wifi,
+  WifiOff,
+  Menu,
+} from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 interface ModernHeaderProps {
@@ -11,6 +21,8 @@ interface ModernHeaderProps {
   showGPS?: boolean;
   gpsStatus?: "connected" | "disconnected";
   className?: string;
+  onToggleSidebar?: () => void;
+  isSidebarOpen?: boolean;
 }
 
 export function ModernHeader({
@@ -20,6 +32,8 @@ export function ModernHeader({
   showGPS = true,
   gpsStatus = "connected",
   className,
+  onToggleSidebar,
+  isSidebarOpen,
 }: ModernHeaderProps) {
   const [user, setUser] = useState({
     email: "",
@@ -42,8 +56,6 @@ export function ModernHeader({
       }
     );
 
-    // console.log("data", res.data);
-
     setUser(res.data);
   };
 
@@ -57,6 +69,14 @@ export function ModernHeader({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-6">
+          {/* Hamburger menu for mobile */}
+          <button
+            onClick={onToggleSidebar}
+            className="md:hidden p-2 rounded-xl bg-white/50 hover:bg-white/70 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-600" />
+          </button>
+
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
             {subtitle && (
@@ -103,9 +123,11 @@ export function ModernHeader({
               </Badge>
             </button>
 
-            <button className="p-2 bg-white/50 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/70 transition-colors">
-              <Settings className="w-5 h-5 text-gray-600" />
-            </button>
+            <Link href="/settings">
+              <button className="p-2 bg-white/50 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/70 transition-colors">
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+            </Link>
 
             <div className="w-px h-6 bg-gray-300" />
 

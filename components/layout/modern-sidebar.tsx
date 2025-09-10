@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-
 import {
   LayoutDashboard,
   FileText,
@@ -17,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PillButton } from "@/components/ui/pill-button";
@@ -34,7 +34,12 @@ const navigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function ModernSidebar() {
+interface ModernSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
@@ -49,23 +54,28 @@ export function ModernSidebar() {
     },
   });
 
-  const getuser = async () => {
+  const getUser = async () => {
     const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found in localStorage");
+      return;
+    }
 
-    const res = await axios.get(
-      "http://localhost:1337/api/users/me?populate=*",
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    // console.log("data", res.data);
-
-    setUser(res.data);
+    try {
+      const res = await axios.get(
+        "http://localhost:1337/api/users/me?populate=*",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUser(res.data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
   };
 
   useEffect(() => {
-    getuser();
+    getUser();
   }, []);
 
   return (
@@ -73,39 +83,46 @@ export function ModernSidebar() {
       initial={{ width: 280 }}
       animate={{ width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      id="cursor"
-      className="bg-gradient-to-b from-blue-50 to-green-50 border-r border-white/30 backdrop-blur-md flex flex-col h-screen overflow-y-auto  "
+      className={cn(
+        "bg-gradient-to-b from-blue-50 to-green-50 border-r border-white/30 backdrop-blur-md flex flex-col h-screen overflow-y-auto md:w-auto",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        "md:translate-x-0 transition-transform duration-300 ease-in-out z-50"
+      )}
     >
       {/* Header */}
-      <div className="p-6 border-b border-white/30">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 1 }}
-              animate={{ opacity: isCollapsed ? 0 : 1 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-center space-x-3"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00ADE7] to-[#305292] rounded-2xl flex items-center justify-center">
-                <Camera className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">
-                  Trinai Survey
-                </h1>
-                <p className="text-sm text-gray-600">Management System</p>
-              </div>
-            </motion.div>
-          )}
+      <div className="p-6 border-b border-white/30 flex items-center justify-between">
+        {!isCollapsed && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            animate={{ opacity: isCollapsed ? 0 : 1 }}
+            transition={{ duration: 0.2 }}
+            className="flex items-center space-x-3"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-[#00ADE7] to-[#305292] rounded-2xl flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Trinai Survey</h1>
+              <p className="text-sm text-gray-600">Management System</p>
+            </div>
+          </motion.div>
+        )}
+        <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-xl bg-white/50 hover:bg-white/70 transition-colors"
+            className="p-2 rounded-xl bg-white/50 hover:bg-white/70 transition-colors hidden md:block"
           >
             {isCollapsed ? (
               <ChevronRight className="w-4 h-4 text-gray-600" />
             ) : (
               <ChevronLeft className="w-4 h-4 text-gray-600" />
             )}
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-white/50 hover:bg-white/70 transition-colors md:hidden"
+          >
+            <X className="w-4 h-4 text-gray-600" />
           </button>
         </div>
       </div>
@@ -114,7 +131,7 @@ export function ModernSidebar() {
       {!isCollapsed && (
         <div className="p-6 border-b border-white/30">
           <Link href="/surveys/new">
-            <PillButton className="w-full bg-gradient-to-r from-blue-500 to-blue-500  text-white">
+            <PillButton className="w-full bg-gradient-to-r from-blue-500 to-blue-500 text-white">
               <Plus className="w-4 h-4 mr-2" />
               New Survey
             </PillButton>
@@ -127,7 +144,13 @@ export function ModernSidebar() {
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link key={item.name} href={item.href}>
+            <Link
+              key={item.name}
+              href={item.href}
+              onClick={() => {
+                if (onClose) onClose(); // Call onClose if provided
+              }}
+            >
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

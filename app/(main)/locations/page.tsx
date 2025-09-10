@@ -1361,382 +1361,358 @@ export default function LocationsPage() {
   };
 
   return (
-    <PageLayout>
-      <div className="flex h-screen">
-        <ModernSidebar />
+    <div>
+      <main className="flex-1 overflow-y-auto p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <ModernCard>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+                <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white/50 backdrop-blur-sm h-12">
+                  <TabsTrigger
+                    value="divisions"
+                    className="text-sm font-medium"
+                  >
+                    Divisions
+                  </TabsTrigger>
+                  <TabsTrigger value="depots" className="text-sm font-medium">
+                    Depots
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="bus-stations"
+                    className="text-sm font-medium"
+                  >
+                    Bus Stations
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="bus-stands"
+                    className="text-sm font-medium"
+                  >
+                    Bus Stands
+                  </TabsTrigger>
+                </TabsList>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ModernHeader
-            title="Location Management"
-            subtitle="Manage divisions, depots, bus stations, and bus stands"
-            showGPS={false}
-          />
-
-          <main className="flex-1 overflow-y-auto p-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <ModernCard>
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
-                    <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white/50 backdrop-blur-sm h-12">
-                      <TabsTrigger
-                        value="divisions"
-                        className="text-sm font-medium"
-                      >
-                        Divisions
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="depots"
-                        className="text-sm font-medium"
-                      >
-                        Depots
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="bus-stations"
-                        className="text-sm font-medium"
-                      >
-                        Bus Stations
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="bus-stands"
-                        className="text-sm font-medium"
-                      >
-                        Bus Stands
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <Input
-                          placeholder="Search..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 w-64 h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl"
-                        />
-                      </div>
-
-                      <Dialog
-                        open={isAddDialogOpen}
-                        onOpenChange={setIsAddDialogOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <PillButton
-                            variant="accent"
-                            onClick={() => setEditingItem(null)}
-                            className="h-12 px-6"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add {activeTab.replace("-", " ")}
-                          </PillButton>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-white/30">
-                          <DialogHeader>
-                            <DialogTitle className="text-xl font-semibold text-gray-900">
-                              {editingItem ? "Edit" : "Add"}{" "}
-                              {activeTab.replace("-", " ")}
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="py-4">
-                            {renderAddForm()}
-                            <div className="flex justify-end space-x-3 pt-6 border-t border-white/30 mt-6">
-                              <PillButton
-                                variant="secondary"
-                                onClick={() => {
-                                  setIsAddDialogOpen(false);
-                                  setEditingItem(null);
-                                  resetForm();
-                                }}
-                                className="h-12 px-6"
-                              >
-                                Cancel
-                              </PillButton>
-                              <PillButton
-                                variant="accent"
-                                onClick={() =>
-                                  editingItem
-                                    ? handleUpdate(activeTab)
-                                    : handleAdd(activeTab)
-                                }
-                                className="h-12 px-6"
-                              >
-                                {editingItem ? "Update" : "Add"}
-                              </PillButton>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Input
+                      placeholder="Search..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 w-64 h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl"
+                    />
                   </div>
 
-                  <TabsContent value="divisions" className="space-y-4">
-                    {divisions.map((division, index) => (
-                      <motion.div
-                        key={division.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                  <Dialog
+                    open={isAddDialogOpen}
+                    onOpenChange={setIsAddDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <PillButton
+                        variant="accent"
+                        onClick={() => setEditingItem(null)}
+                        className="h-12 px-6"
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-4 rounded-2xl">
-                            <Building className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-900">
-                              {division.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Code: {division.code} • Region: {division.region}{" "}
-                              • {division.depots} depots
-                            </p>
-                            {division.description && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {division.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          {getStatusBadge(division.status)}
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add {activeTab.replace("-", " ")}
+                      </PillButton>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-white/30">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold text-gray-900">
+                          {editingItem ? "Edit" : "Add"}{" "}
+                          {activeTab.replace("-", " ")}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        {renderAddForm()}
+                        <div className="flex justify-end space-x-3 pt-6 border-t border-white/30 mt-6">
                           <PillButton
                             variant="secondary"
-                            size="sm"
-                            onClick={() => handleEdit(division)}
+                            onClick={() => {
+                              setIsAddDialogOpen(false);
+                              setEditingItem(null);
+                              resetForm();
+                            }}
+                            className="h-12 px-6"
                           >
-                            <Edit className="w-4 h-4" />
+                            Cancel
                           </PillButton>
                           <PillButton
-                            variant="secondary"
-                            size="sm"
+                            variant="accent"
                             onClick={() =>
-                              handleDelete(
-                                division.documentId,
-                                "division",
-                                division.name
-                              )
+                              editingItem
+                                ? handleUpdate(activeTab)
+                                : handleAdd(activeTab)
                             }
+                            className="h-12 px-6"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            {editingItem ? "Update" : "Add"}
                           </PillButton>
                         </div>
-                      </motion.div>
-                    ))}
-                  </TabsContent>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
 
-                  <TabsContent value="depots" className="space-y-4">
-                    {depots.map((depot, index) => (
-                      <motion.div
-                        key={depot.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+              <TabsContent value="divisions" className="space-y-4">
+                {divisions.map((division, index) => (
+                  <motion.div
+                    key={division.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-4 rounded-2xl">
+                        <Building className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900">
+                          {division.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Code: {division.code} • Region: {division.region} •{" "}
+                          {division.depots} depots
+                        </p>
+                        {division.description && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {division.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      {getStatusBadge(division.status)}
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleEdit(division)}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-gradient-to-br from-green-400 to-emerald-500 p-4 rounded-2xl">
-                            <MapPin className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-900">
-                              {depot.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Code: {depot.code} • Division: {depot.division} •{" "}
-                              {depot.busStations} bus stations
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {depot.address}
-                            </p>
-                            {depot.contactPerson && (
-                              <p className="text-xs text-gray-500">
-                                Contact: {depot.contactPerson}{" "}
-                                {depot.phone && `• ${depot.phone}`}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          {getStatusBadge(depot.status)}
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleEdit(depot)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </PillButton>
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() =>
-                              handleDelete(
-                                depot.documentId,
-                                "depot",
-                                depot.name
-                              )
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </PillButton>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </TabsContent>
+                        <Edit className="w-4 h-4" />
+                      </PillButton>
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          handleDelete(
+                            division.documentId,
+                            "division",
+                            division.name
+                          )
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </PillButton>
+                    </div>
+                  </motion.div>
+                ))}
+              </TabsContent>
 
-                  <TabsContent value="bus-stations" className="space-y-4">
-                    {busStations.map((station, index) => (
-                      <motion.div
-                        key={station.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+              <TabsContent value="depots" className="space-y-4">
+                {depots.map((depot, index) => (
+                  <motion.div
+                    key={depot.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gradient-to-br from-green-400 to-emerald-500 p-4 rounded-2xl">
+                        <MapPin className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900">
+                          {depot.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Code: {depot.code} • Division: {depot.division} •{" "}
+                          {depot.busStations} bus stations
+                        </p>
+                        <p className="text-xs text-gray-500">{depot.address}</p>
+                        {depot.contactPerson && (
+                          <p className="text-xs text-gray-500">
+                            Contact: {depot.contactPerson}{" "}
+                            {depot.phone && `• ${depot.phone}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      {getStatusBadge(depot.status)}
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleEdit(depot)}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-gradient-to-br from-purple-400 to-purple-600 p-4 rounded-2xl">
-                            <Bus className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-900">
-                              {station.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Depot: {station.depot} • Division:{" "}
-                              {station.division} • {station.busStands} bus
-                              stands
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {station.address} • GPS:{" "}
-                              {station.latitude.toFixed(4)},{" "}
-                              {station.longitude.toFixed(4)}
-                            </p>
-                            {station.facilities &&
-                              Object.entries(station.facilities)
-                                .filter(([_, value]) => value === true) // keep only enabled
-                                .map(([key]) => key) // get only names
-                                .slice(0, 3).length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {Object.entries(station.facilities)
-                                    .filter(([_, value]) => value === true)
-                                    .map(([key]) => key)
-                                    .slice(0, 3)
-                                    .map((facility, idx) => (
-                                      <Badge
-                                        key={idx}
-                                        className="bg-purple-100 text-purple-800 border-purple-200 text-xs"
-                                      >
-                                        {facility}
-                                      </Badge>
-                                    ))}
-                                  {Object.entries(station.facilities)
-                                    .filter(([_, value]) => value === true)
-                                    .map(([key]) => key).length > 3 && (
-                                    <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-xs">
-                                      +
-                                      {Object.entries(
-                                        station.facilities
-                                      ).filter(([_, value]) => value === true)
-                                        .length - 3}{" "}
-                                      more
-                                    </Badge>
-                                  )}
-                                </div>
+                        <Edit className="w-4 h-4" />
+                      </PillButton>
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          handleDelete(depot.documentId, "depot", depot.name)
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </PillButton>
+                    </div>
+                  </motion.div>
+                ))}
+              </TabsContent>
+
+              <TabsContent value="bus-stations" className="space-y-4">
+                {busStations.map((station, index) => (
+                  <motion.div
+                    key={station.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gradient-to-br from-purple-400 to-purple-600 p-4 rounded-2xl">
+                        <Bus className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900">
+                          {station.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Depot: {station.depot} • Division: {station.division}{" "}
+                          • {station.busStands} bus stands
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {station.address} • GPS: {station.latitude.toFixed(4)}
+                          , {station.longitude.toFixed(4)}
+                        </p>
+                        {station.facilities &&
+                          Object.entries(station.facilities)
+                            .filter(([_, value]) => value === true) // keep only enabled
+                            .map(([key]) => key) // get only names
+                            .slice(0, 3).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {Object.entries(station.facilities)
+                                .filter(([_, value]) => value === true)
+                                .map(([key]) => key)
+                                .slice(0, 3)
+                                .map((facility, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    className="bg-purple-100 text-purple-800 border-purple-200 text-xs"
+                                  >
+                                    {facility}
+                                  </Badge>
+                                ))}
+                              {Object.entries(station.facilities)
+                                .filter(([_, value]) => value === true)
+                                .map(([key]) => key).length > 3 && (
+                                <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-xs">
+                                  +
+                                  {Object.entries(station.facilities).filter(
+                                    ([_, value]) => value === true
+                                  ).length - 3}{" "}
+                                  more
+                                </Badge>
                               )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          {getStatusBadge(station.status)}
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleEdit(station)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </PillButton>
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() =>
-                              handleDelete(
-                                station.documentId,
-                                "bus-station",
-                                station.name
-                              )
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </PillButton>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </TabsContent>
-
-                  <TabsContent value="bus-stands" className="space-y-4">
-                    {busStands.map((stand, index) => (
-                      <motion.div
-                        key={stand.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      {getStatusBadge(station.status)}
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleEdit(station)}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl">
-                            <Navigation className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-lg text-gray-900">
-                              {stand.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Platform: {stand.platformNumber} • Station:{" "}
-                              {stand.busStation} • Capacity: {stand.capacity}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {stand.depot} • {stand.division}
-                            </p>
-                            {stand.type && (
-                              <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs mt-1">
-                                {stand.type}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          {getStatusBadge(stand.status)}
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleEdit(stand)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </PillButton>
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() =>
-                              handleDelete(
-                                stand.documentId,
-                                "bus-stand",
-                                stand.name
-                              )
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </PillButton>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </TabsContent>
-                </Tabs>
-              </ModernCard>
-            </motion.div>
-          </main>
-        </div>
-      </div>
-    </PageLayout>
+                        <Edit className="w-4 h-4" />
+                      </PillButton>
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          handleDelete(
+                            station.documentId,
+                            "bus-station",
+                            station.name
+                          )
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </PillButton>
+                    </div>
+                  </motion.div>
+                ))}
+              </TabsContent>
+
+              <TabsContent value="bus-stands" className="space-y-4">
+                {busStands.map((stand, index) => (
+                  <motion.div
+                    key={stand.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-white/30 rounded-2xl hover:bg-white/70 transition-all duration-200"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl">
+                        <Navigation className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900">
+                          {stand.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Platform: {stand.platformNumber} • Station:{" "}
+                          {stand.busStation} • Capacity: {stand.capacity}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {stand.depot} • {stand.division}
+                        </p>
+                        {stand.type && (
+                          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs mt-1">
+                            {stand.type}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      {getStatusBadge(stand.status)}
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleEdit(stand)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </PillButton>
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          handleDelete(
+                            stand.documentId,
+                            "bus-stand",
+                            stand.name
+                          )
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </PillButton>
+                    </div>
+                  </motion.div>
+                ))}
+              </TabsContent>
+            </Tabs>
+          </ModernCard>
+        </motion.div>
+      </main>
+    </div>
   );
 }

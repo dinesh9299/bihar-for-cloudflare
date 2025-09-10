@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { PageLayout } from "@/components/layout/page-layout";
-import { ModernSidebar } from "@/components/layout/modern-sidebar";
-import { ModernHeader } from "@/components/layout/modern-header";
+
 import { ModernCard } from "@/components/ui/modern-card";
 import { PillButton } from "@/components/ui/pill-button";
 import { StatCard } from "@/components/ui/stat-card";
@@ -711,328 +709,299 @@ export default function SurveysPage() {
   };
 
   return (
-    <PageLayout>
-      <div className="flex h-screen">
-        <ModernSidebar />
-
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ModernHeader
-            title="Site Surveys"
-            subtitle="Manage and track all CCTV installation surveys"
-            showGPS={true}
-            gpsStatus={gpsStatus === "success" ? "connected" : "disconnected"}
-          />
-
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <StatCard
-                  title="Total Surveys"
-                  value={surveys.length}
-                  subtitle="All time"
-                  icon={<MapPin className="w-6 h-6" />}
-                  color="amber"
-                />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <StatCard
-                  title="Completed"
-                  value={
-                    surveys.filter((s) => s.workStatus === "survey-completed")
-                      .length
-                  }
-                  subtitle="This month"
-                  icon={<Camera className="w-6 h-6" />}
-                  color="green"
-                />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <StatCard
-                  title="In Progress"
-                  value={
-                    surveys.filter((s) => s.workStatus === "in-progress").length
-                  }
-                  subtitle="Active now"
-                  icon={<Clock className="w-6 h-6" />}
-                  color="blue"
-                />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                <StatCard
-                  title="Pending"
-                  value={
-                    surveys.filter((s) =>
-                      [
-                        "survey-initiated",
-                        "pending-approval",
-                        "ready-for-installation",
-                      ].includes(s.workStatus)
-                    ).length
-                  }
-                  subtitle="Awaiting start"
-                  icon={<User className="w-6 h-6" />}
-                  color="purple"
-                />
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <ModernCard className="mb-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
-                  <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-                    <div className="relative">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <Input
-                        placeholder="Search surveys..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-80 h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl"
-                      />
-                    </div>
-                    <Select
-                      value={statusFilter}
-                      onValueChange={setStatusFilter}
-                    >
-                      <SelectTrigger className="w-40 h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="survey-completed">
-                          Completed
-                        </SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="survey-initiated">
-                          Initiated
-                        </SelectItem>
-                        <SelectItem value="pending-approval">
-                          Pending Approval
-                        </SelectItem>
-                        <SelectItem value="ready-for-installation">
-                          Ready for Installation
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={divisionFilter}
-                      onValueChange={setDivisionFilter}
-                    >
-                      <SelectTrigger className="w-40 h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl">
-                        <SelectValue placeholder="Division" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Divisions</SelectItem>
-                        {divisions.map((division) => (
-                          <SelectItem key={division.id} value={division.id}>
-                            {division.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <PillButton variant="secondary" size="sm">
-                      <Filter className="w-4 h-4 mr-2" />
-                      More Filters
-                    </PillButton>
-                    <PillButton
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleExport}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Export
-                    </PillButton>
-                    <Link href="/surveys/new">
-                      <PillButton variant="accent" size="sm">
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Survey
-                      </PillButton>
-                    </Link>
-                  </div>
-                </div>
-              </ModernCard>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <ModernCard>
-                <div className="space-y-2 sm:space-y-4">
-                  {paginatedSurveys.map((survey, index) => (
-                    <motion.div
-                      key={survey.documentId}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-lg sm:rounded-2xl hover:bg-white/70 transition-all duration-200"
-                    >
-                      <div className="flex items-center space-x-2 sm:space-x-4 w-full mb-2 sm:mb-0">
-                        <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-1 sm:p-2 rounded-lg sm:rounded-2xl">
-                          <MapPin className="w-4 h-4 sm:w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-1">
-                            <h3 className="font-bold text-sm sm:text-base text-gray-900">
-                              {survey.surveyName}
-                            </h3>
-                            <Badge
-                              className={getStatusColor(survey.workStatus)}
-                            >
-                              {survey.workStatus.replace("-", " ")}
-                            </Badge>
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-700 mb-1">
-                            {survey.bus_station.name}
-                          </p>
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 text-xs sm:text-sm text-gray-600">
-                            <span className="flex items-center space-x-1">
-                              <User className="w-3 h-3 sm:w-4 h-4" />
-                              <span>{survey.division.name}</span>
-                            </span>
-                            <span className="flex items-center space-x-1">
-                              <Calendar className="w-3 h-3 sm:w-4 h-4" />
-                              <span>{survey.id}</span>
-                            </span>
-                            <span className="flex items-center space-x-1">
-                              <Camera className="w-3 h-3 sm:w-4 h-4" />
-                              <span>{survey.cameraDetails.length} cameras</span>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-                        <div className="text-right w-full sm:w-20 mb-2 sm:mb-0">
-                          <div className="text-xs sm:text-sm font-medium text-gray-900">
-                            0%
-                          </div>
-                          <div className="w-full sm:w-20 bg-gray-200 rounded-full h-1 sm:h-2 mt-1">
-                            <div
-                              className="bg-gradient-to-r from-amber-400 to-yellow-500 h-1 sm:h-2 rounded-full"
-                              style={{ width: `0%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-1 sm:space-x-2 w-full sm:w-auto">
-                          <Link href={`/surveys/${survey.documentId}`}>
-                            <PillButton variant="secondary" size="sm">
-                              <Eye className="w-3 h-3 sm:w-4 h-4" />
-                            </PillButton>
-                          </Link>
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleEdit(survey)}
-                          >
-                            <Edit className="w-3 h-3 sm:w-4 h-4" />
-                          </PillButton>
-                          <PillButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleDelete(survey)}
-                          >
-                            <Trash2 className="w-3 h-3 sm:w-4 h-4" />
-                          </PillButton>
-                          <PillButton variant="secondary" size="sm">
-                            <MoreHorizontal className="w-3 h-3 sm:w-4 h-4" />
-                          </PillButton>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-                {totalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-white/30">
-                    <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-0">
-                      Showing {startIndex + 1} to{" "}
-                      {Math.min(
-                        startIndex + itemsPerPage,
-                        filteredSurveys.length
-                      )}{" "}
-                      of {filteredSurveys.length} surveys
-                    </div>
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <PillButton
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setCurrentPage(Math.max(1, currentPage - 1))
-                        }
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="w-3 h-3 sm:w-4 h-4" />
-                      </PillButton>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                        (page) => (
-                          <PillButton
-                            key={page}
-                            variant={
-                              currentPage === page ? "accent" : "secondary"
-                            }
-                            size="sm"
-                            onClick={() => setCurrentPage(page)}
-                          >
-                            {page}
-                          </PillButton>
-                        )
-                      )}
-                      <PillButton
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setCurrentPage(Math.min(totalPages, currentPage + 1))
-                        }
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="w-3 h-3 sm:w-4 h-4" />
-                      </PillButton>
-                    </div>
-                  </div>
-                )}
-                {filteredSurveys.length === 0 && (
-                  <div className="text-center py-4 sm:py-12">
-                    <MapPin className="w-8 h-8 sm:w-12 h-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
-                    <h3 className="text-sm sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">
-                      No surveys found
-                    </h3>
-                    <p className="text-xs sm:text-base text-gray-600 mb-2 sm:mb-4">
-                      Try adjusting your search or filter criteria
-                    </p>
-                    <Link href="/surveys/new">
-                      <PillButton variant="accent" size="sm">
-                        <Plus className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
-                        Create New Survey
-                      </PillButton>
-                    </Link>
-                  </div>
-                )}
-              </ModernCard>
-            </motion.div>
-          </main>
+    <div>
+      <main className="flex-1  p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <StatCard
+              title="Total Surveys"
+              value={surveys.length}
+              subtitle="All time"
+              icon={<MapPin className="w-6 h-6" />}
+              color="amber"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <StatCard
+              title="Completed"
+              value={
+                surveys.filter((s) => s.workStatus === "survey-completed")
+                  .length
+              }
+              subtitle="This month"
+              icon={<Camera className="w-6 h-6" />}
+              color="green"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <StatCard
+              title="In Progress"
+              value={
+                surveys.filter((s) => s.workStatus === "in-progress").length
+              }
+              subtitle="Active now"
+              icon={<Clock className="w-6 h-6" />}
+              color="blue"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <StatCard
+              title="Pending"
+              value={
+                surveys.filter((s) =>
+                  [
+                    "survey-initiated",
+                    "pending-approval",
+                    "ready-for-installation",
+                  ].includes(s.workStatus)
+                ).length
+              }
+              subtitle="Awaiting start"
+              icon={<User className="w-6 h-6" />}
+              color="purple"
+            />
+          </motion.div>
         </div>
-      </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <ModernCard className="mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+              <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Search surveys..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-80 h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40 h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="survey-completed">Completed</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="survey-initiated">Initiated</SelectItem>
+                    <SelectItem value="pending-approval">
+                      Pending Approval
+                    </SelectItem>
+                    <SelectItem value="ready-for-installation">
+                      Ready for Installation
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={divisionFilter}
+                  onValueChange={setDivisionFilter}
+                >
+                  <SelectTrigger className="w-40 h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl">
+                    <SelectValue placeholder="Division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {divisions.map((division) => (
+                      <SelectItem key={division.id} value={division.id}>
+                        {division.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-3">
+                <PillButton variant="secondary" size="sm">
+                  <Filter className="w-4 h-4 mr-2" />
+                  More Filters
+                </PillButton>
+                <PillButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleExport}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </PillButton>
+                <Link href="/surveys/new">
+                  <PillButton variant="accent" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Survey
+                  </PillButton>
+                </Link>
+              </div>
+            </div>
+          </ModernCard>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <ModernCard>
+            <div className="space-y-2 sm:space-y-4">
+              {paginatedSurveys.map((survey, index) => (
+                <motion.div
+                  key={survey.documentId}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-lg sm:rounded-2xl hover:bg-white/70 transition-all duration-200"
+                >
+                  <div className="flex items-center space-x-2 sm:space-x-4 w-full mb-2 sm:mb-0">
+                    <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-1 sm:p-2 rounded-lg sm:rounded-2xl">
+                      <MapPin className="w-4 h-4 sm:w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-1">
+                        <h3 className="font-bold text-sm sm:text-base text-gray-900">
+                          {survey.surveyName}
+                        </h3>
+                        <Badge className={getStatusColor(survey.workStatus)}>
+                          {survey.workStatus.replace("-", " ")}
+                        </Badge>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-700 mb-1">
+                        {survey.bus_station.name}
+                      </p>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 text-xs sm:text-sm text-gray-600">
+                        <span className="flex items-center space-x-1">
+                          <User className="w-3 h-3 sm:w-4 h-4" />
+                          <span>{survey.division.name}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Calendar className="w-3 h-3 sm:w-4 h-4" />
+                          <span>{survey.id}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Camera className="w-3 h-3 sm:w-4 h-4" />
+                          <span>{survey.cameraDetails.length} cameras</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                    <div className="text-right w-full sm:w-20 mb-2 sm:mb-0">
+                      <div className="text-xs sm:text-sm font-medium text-gray-900">
+                        0%
+                      </div>
+                      <div className="w-full sm:w-20 bg-gray-200 rounded-full h-1 sm:h-2 mt-1">
+                        <div
+                          className="bg-gradient-to-r from-amber-400 to-yellow-500 h-1 sm:h-2 rounded-full"
+                          style={{ width: `0%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1 sm:space-x-2 w-full sm:w-auto">
+                      <Link href={`/surveys/${survey.documentId}`}>
+                        <PillButton variant="secondary" size="sm">
+                          <Eye className="w-3 h-3 sm:w-4 h-4" />
+                        </PillButton>
+                      </Link>
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleEdit(survey)}
+                      >
+                        <Edit className="w-3 h-3 sm:w-4 h-4" />
+                      </PillButton>
+                      <PillButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleDelete(survey)}
+                      >
+                        <Trash2 className="w-3 h-3 sm:w-4 h-4" />
+                      </PillButton>
+                      <PillButton variant="secondary" size="sm">
+                        <MoreHorizontal className="w-3 h-3 sm:w-4 h-4" />
+                      </PillButton>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-white/30">
+                <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-0">
+                  Showing {startIndex + 1} to{" "}
+                  {Math.min(startIndex + itemsPerPage, filteredSurveys.length)}{" "}
+                  of {filteredSurveys.length} surveys
+                </div>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <PillButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-3 h-3 sm:w-4 h-4" />
+                  </PillButton>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <PillButton
+                        key={page}
+                        variant={currentPage === page ? "accent" : "secondary"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </PillButton>
+                    )
+                  )}
+                  <PillButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="w-3 h-3 sm:w-4 h-4" />
+                  </PillButton>
+                </div>
+              </div>
+            )}
+            {filteredSurveys.length === 0 && (
+              <div className="text-center py-4 sm:py-12">
+                <MapPin className="w-8 h-8 sm:w-12 h-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
+                <h3 className="text-sm sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">
+                  No surveys found
+                </h3>
+                <p className="text-xs sm:text-base text-gray-600 mb-2 sm:mb-4">
+                  Try adjusting your search or filter criteria
+                </p>
+                <Link href="/surveys/new">
+                  <PillButton variant="accent" size="sm">
+                    <Plus className="w-3 h-3 sm:w-4 h-4 mr-1 sm:mr-2" />
+                    Create New Survey
+                  </PillButton>
+                </Link>
+              </div>
+            )}
+          </ModernCard>
+        </motion.div>
+      </main>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-white/30">
@@ -1819,6 +1788,6 @@ export default function SurveysPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </PageLayout>
+    </div>
   );
 }
