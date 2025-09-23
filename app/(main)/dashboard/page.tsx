@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/page-layout";
 import { ModernSidebar } from "@/components/layout/modern-sidebar";
 import { ModernHeader } from "@/components/layout/modern-header";
@@ -22,7 +24,41 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
-import axios from "axios";
+import api from "@/lib/api";
+
+interface StrapiSurvey {
+  id: number;
+  workStatus: string;
+  cameraDetails?: { status: string }[];
+  locationDetails?: string;
+  bus_station?: { name: string };
+  division?: { name: string };
+  surveyor?: { name: string };
+  createdAt: string;
+}
+
+interface StrapiResponse<T> {
+  data: { data: T };
+}
+
+function getGreetingForIST() {
+  // Get IST time
+  const now = new Date();
+  const istTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+  const hours = istTime.getHours();
+
+  if (hours >= 5 && hours < 12) {
+    return "Good Morning";
+  } else if (hours >= 12 && hours < 17) {
+    return "Good Afternoon";
+  } else if (hours >= 17 && hours < 21) {
+    return "Good Evening";
+  } else {
+    return "Good Night";
+  }
+}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -39,6 +75,8 @@ export default function Dashboard() {
   const [recentSurveys, setRecentSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -47,11 +85,28 @@ export default function Dashboard() {
     { id: "team", label: "Team" },
   ];
 
+  // Check token validity on mount
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const expirationTime = localStorage.getItem("tokenExpiration");
+    const currentTime = Date.now();
+
+    if (!token || (expirationTime && currentTime > parseInt(expirationTime))) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("tokenExpiration");
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+      });
+      router.push("/");
+      return;
+    }
+
     const fetchDashboardData = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:1337/api/surveys?populate=*"
+        const response = await api.get<StrapiResponse<StrapiSurvey[]>>(
+          "/surveys?populate=*"
         );
         const surveys = response.data.data;
 
@@ -82,7 +137,8 @@ export default function Dashboard() {
 
         const sortedSurveys = [...surveys]
           .sort(
-            (a: any, b: any) => new Date(b.createdAt) - new Date(a.createdAt)
+            (a: any, b: any) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
           .slice(0, 3);
         const recent = sortedSurveys.map((s: any) => ({
@@ -114,16 +170,28 @@ export default function Dashboard() {
           completionRate,
         });
         setRecentSurveys(recent);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch dashboard data:", err);
-        setError("Failed to load dashboard data. Please try again later.");
+        const errorMessage =
+          err.message === "Session expired. Please log in again."
+            ? "Your session has expired. Please log in again."
+            : "Failed to load dashboard data. Please try again later.";
+        setError(errorMessage);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMessage,
+        });
+        if (err.message === "Session expired. Please log in again.") {
+          router.push("/login");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [router, toast]);
 
   if (loading) {
     return (
@@ -172,7 +240,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <main className="flex-1  p-4 sm:p-6">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {/* Welcome Section */}
         <div className="mb-4 sm:mb-8">
           <motion.div
@@ -181,7 +249,7 @@ export default function Dashboard() {
             transition={{ duration: 0.5 }}
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Good morning, Survey Team! 👋
+              {getGreetingForIST()}, Survey Team! 👋
             </h2>
             <p className="text-sm sm:text-base text-gray-600">
               Here's what's happening with your surveys today.
@@ -191,7 +259,6 @@ export default function Dashboard() {
 
         {/* Navigation Pills */}
         <div className="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between mb-4 lg:mb-6 xl:mb-8">
-          {/* Tabs */}
           <div className="w-full lg:w-auto">
             <div className="flex overflow-x-auto lg:overflow-visible bg-white/50 backdrop-blur-sm rounded-full p-1 border border-white/30">
               <div className="flex space-x-1 lg:space-x-2 min-w-max lg:min-w-0">
@@ -308,7 +375,6 @@ export default function Dashboard() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-8">
-          {/* Progress Overview */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -335,10 +401,7 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="text-center">
-                  <ProgressRing
-                    progress={stats.completionRate}
-                    size={120} // Base size, adjust in ProgressRing if needed
-                  >
+                  <ProgressRing progress={stats.completionRate} size={120}>
                     <div className="text-center">
                       <div className="text-xl sm:text-2xl font-bold text-gray-900">
                         {Math.round(stats.completionRate)}%
@@ -364,7 +427,10 @@ export default function Dashboard() {
                       className="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 sm:h-2 rounded-full"
                       style={{
                         width: `${
-                          (stats.completedSurveys / stats.totalSurveys) * 100
+                          stats.totalSurveys > 0
+                            ? (stats.completedSurveys / stats.totalSurveys) *
+                              100
+                            : 0
                         }%`,
                       }}
                     ></div>
@@ -383,7 +449,9 @@ export default function Dashboard() {
                       className="bg-gradient-to-r from-amber-400 to-yellow-500 h-1.5 sm:h-2 rounded-full"
                       style={{
                         width: `${
-                          (stats.pendingSurveys / stats.totalSurveys) * 100
+                          stats.totalSurveys > 0
+                            ? (stats.pendingSurveys / stats.totalSurveys) * 100
+                            : 0
                         }%`,
                       }}
                     ></div>
@@ -402,7 +470,9 @@ export default function Dashboard() {
                       className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 sm:h-2 rounded-full"
                       style={{
                         width: `${
-                          (stats.onlineCameras / stats.totalCameras) * 100
+                          stats.totalCameras > 0
+                            ? (stats.onlineCameras / stats.totalCameras) * 100
+                            : 0
                         }%`,
                       }}
                     ></div>
@@ -412,7 +482,6 @@ export default function Dashboard() {
             </ModernCard>
           </motion.div>
 
-          {/* Recent Activity */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -470,7 +539,6 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -483,19 +551,16 @@ export default function Dashboard() {
               New Survey
             </PillButton>
           </Link>
-
           <Link href="/map">
             <PillButton variant="secondary" size="lg">
               <MapPin className="w-5 h-5 mr-2" />
               View Map
             </PillButton>
           </Link>
-
           <PillButton variant="secondary" size="lg">
             <Download className="w-5 h-5 mr-2" />
             Export Data
           </PillButton>
-
           <PillButton variant="secondary" size="lg">
             <Filter className="w-5 h-5 mr-2" />
             Advanced Filters

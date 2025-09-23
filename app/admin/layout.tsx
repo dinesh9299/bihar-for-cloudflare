@@ -1,11 +1,10 @@
-// app/admin/layout.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { PageLayout } from "@/components/layout/page-layout";
 import { ModernSidebar } from "@/components/layout/modern-sidebar";
 import { ModernHeader } from "@/components/layout/modern-header";
-import { toast } from "@/components/ui/use-toast"; // assuming you use shadcn toast
+import { toast } from "@/components/ui/use-toast";
 import { ModernSidebar1 } from "@/components/layout/modern-sidebar1";
 
 export default function AdminLayout({
@@ -20,6 +19,7 @@ export default function AdminLayout({
     null
   );
   const [isRefreshingGPS, setIsRefreshingGPS] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const getGPSLocation = () => {
     setIsRefreshingGPS(true);
@@ -32,7 +32,7 @@ export default function AdminLayout({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
-          setGpsStatus("connected"); // ✅ use "connected" not "success"
+          setGpsStatus("connected");
           setIsRefreshingGPS(false);
 
           toast({
@@ -45,7 +45,7 @@ export default function AdminLayout({
         },
         (error) => {
           console.error("GPS Error:", error);
-          setGpsStatus("disconnected"); // ✅ use "disconnected" not "error"
+          setGpsStatus("disconnected");
           setIsRefreshingGPS(false);
 
           toast({
@@ -62,7 +62,7 @@ export default function AdminLayout({
         }
       );
     } else {
-      setGpsStatus("disconnected"); // ✅ match expected value
+      setGpsStatus("disconnected");
       setIsRefreshingGPS(false);
 
       toast({
@@ -80,12 +80,29 @@ export default function AdminLayout({
   return (
     <PageLayout>
       <div className="flex h-screen">
-        {/* Sidebar */}
-        <ModernSidebar1 />
+        {/* Sidebar - Hidden on mobile, visible on md+ */}
+        <div
+          className={`fixed inset-y-0 left-0 z-50 md:static md:flex ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } md:translate-x-0 transition-transform duration-300 ease-in-out`}
+        >
+          <ModernSidebar1
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+          />
+        </div>
+
+        {/* Overlay for mobile when sidebar is open */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header with GPS clarity */}
+          {/* Header with GPS and hamburger menu */}
           <ModernHeader
             title="Survey Dashboard"
             subtitle={
@@ -101,8 +118,10 @@ export default function AdminLayout({
             }
             showGPS={true}
             gpsStatus={gpsStatus}
-            onRefreshGPS={getGPSLocation} // optional refresh button
+            onRefreshGPS={getGPSLocation}
             isRefreshingGPS={isRefreshingGPS}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            isSidebarOpen={isSidebarOpen}
           />
 
           {/* Page content */}

@@ -117,7 +117,7 @@ const SurveyDetailsPage = () => {
     const fetchSurvey = async () => {
       try {
         const res = await fetch(
-          `http://localhost:1337/api/surveys/${surveyId}?populate=*`
+          `http://183.82.117.36:1337/api/surveys/${surveyId}?populate=*`
         );
         const data = await res.json();
         setSurvey(data.data);
@@ -134,235 +134,217 @@ const SurveyDetailsPage = () => {
   }, [surveyId]);
 
   return (
-    <PageLayout>
-      <style jsx>{`
-        @keyframes fadeInUp {
-          0% {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out forwards;
-        }
-      `}</style>
-      <div className="flex h-screen">
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-6 overflow-auto">
-            {loading ? (
-              <p className="text-gray-500">Loading survey...</p>
-            ) : survey ? (
-              <div
-                className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${
-                  isMounted ? "animate-fadeInUp" : ""
-                }`} // Apply animation class
-              >
-                <div className="flex items-center">
-                  <ArrowLeft className="w-5 h-5 text-blue-600 mb-2" />
-                  <Link
-                    href="/surveys"
-                    className="text-blue-600 font-medium mb-2"
-                  >
-                    Back to Surveys List
-                  </Link>
-                </div>
-                {/* Survey Header */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                    <div className="flex-1">
-                      <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                        {survey.surveyName}
-                      </h2>
-                      <p className="text-lg text-gray-600 mb-4">
-                        {survey.surveyPurpose}
-                      </p>
+    <div className="flex min-h-screen">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="p-6 overflow-auto">
+          {loading ? (
+            <p className="text-gray-500">Loading survey...</p>
+          ) : survey ? (
+            <div
+              className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${
+                isMounted ? "animate-fadeInUp" : ""
+              }`} // Apply animation class
+            >
+              <div className="flex items-center">
+                <ArrowLeft className="w-5 h-5 text-blue-600 mb-2" />
+                <Link
+                  href="/surveys"
+                  className="text-blue-600 font-medium mb-2"
+                >
+                  Back to Surveys List
+                </Link>
+              </div>
+              {/* Survey Header */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                  <div className="flex-1">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                      {survey.surveyName}
+                    </h2>
+                    <p className="text-lg text-gray-600 mb-4">
+                      {survey.surveyPurpose}
+                    </p>
 
-                      <div className="flex flex-wrap items-center gap-4 mb-6">
-                        <StatusBadge status={survey.workStatus} />
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Calendar className="w-4 h-4" />
-                          <span className="text-sm">
-                            {new Date(survey.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              }
-                            )}
-                          </span>
-                        </div>
+                    <div className="flex flex-wrap items-center gap-4 mb-6">
+                      <StatusBadge status={survey.workStatus} />
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm">
+                          {new Date(survey.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
+                        </span>
                       </div>
-
-                      {survey.notes && (
-                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                          <h4 className="font-medium text-blue-900 mb-2">
-                            Survey Notes
-                          </h4>
-                          <p className="text-blue-800">{survey.notes}</p>
-                        </div>
-                      )}
                     </div>
+
+                    {survey.notes && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                        <h4 className="font-medium text-blue-900 mb-2">
+                          Survey Notes
+                        </h4>
+                        <p className="text-blue-800">{survey.notes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    {/* Division */}
-                    {survey.division && (
-                      <InfoCard title="Division" icon={Building}>
-                        <div className="space-y-2">
+              {/* Main Content Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column */}
+                <div className="space-y-6">
+                  {/* Division */}
+                  {survey.division && (
+                    <InfoCard title="Division" icon={Building}>
+                      <div className="space-y-2">
+                        <p className="text-gray-900 font-medium">
+                          {survey.division.name}
+                        </p>
+                        <p className="text-gray-600 flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          {survey.division.region}
+                        </p>
+                      </div>
+                    </InfoCard>
+                  )}
+
+                  {/* Depot */}
+                  {survey.depot && (
+                    <InfoCard title="Depot Information" icon={Bus}>
+                      <div className="space-y-3">
+                        <div>
                           <p className="text-gray-900 font-medium">
-                            {survey.division.name}
+                            {survey.depot.name}
                           </p>
                           <p className="text-gray-600 flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            {survey.division.region}
+                            <Hash className="w-4 h-4" />
+                            Code: {survey.depot.code}
                           </p>
                         </div>
-                      </InfoCard>
-                    )}
-
-                    {/* Depot */}
-                    {survey.depot && (
-                      <InfoCard title="Depot Information" icon={Bus}>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-gray-900 font-medium">
-                              {survey.depot.name}
-                            </p>
-                            <p className="text-gray-600 flex items-center gap-2">
-                              <Hash className="w-4 h-4" />
-                              Code: {survey.depot.code}
-                            </p>
-                          </div>
-                          <div className="pt-2 border-t border-gray-100">
-                            <p className="text-gray-600 flex items-center gap-2">
-                              <Phone className="w-4 h-4" />
-                              Contact: {survey.depot.contactPerson}
-                            </p>
-                          </div>
+                        <div className="pt-2 border-t border-gray-100">
+                          <p className="text-gray-600 flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            Contact: {survey.depot.contactPerson}
+                          </p>
                         </div>
-                      </InfoCard>
-                    )}
+                      </div>
+                    </InfoCard>
+                  )}
 
-                    {/* Bus Stand */}
-                    {survey.bus_stand && (
-                      <InfoCard title="Bus Stand Details" icon={Users}>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-gray-900 font-medium">
-                              {survey.bus_stand.name}
-                            </p>
-                            <p className="text-gray-600">
-                              Platform: {survey.bus_stand.platformNumber}
-                            </p>
-                          </div>
-                          <div className="pt-2 border-t border-gray-100">
-                            <p className="text-gray-600">
-                              <span className="font-medium">Capacity:</span>{" "}
-                              {survey.bus_stand.capacity} passengers
-                            </p>
-                          </div>
+                  {/* Bus Stand */}
+                  {survey.bus_stand && (
+                    <InfoCard title="Bus Stand Details" icon={Users}>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {survey.bus_stand.name}
+                          </p>
+                          <p className="text-gray-600">
+                            Platform: {survey.bus_stand.platformNumber}
+                          </p>
                         </div>
-                      </InfoCard>
-                    )}
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    {/* Bus Station */}
-                    {survey.bus_station && (
-                      <InfoCard title="Bus Station Location" icon={MapPin}>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-gray-900 font-medium">
-                              {survey.bus_station.name}
-                            </p>
-                            <p className="text-gray-600">
-                              {survey.bus_station.address}
-                            </p>
-                          </div>
-                          <div className="pt-2 border-t border-gray-100">
-                            <p className="text-gray-600 flex items-center gap-2">
-                              <Navigation className="w-4 h-4" />
-                              GPS: {survey.bus_station.latitude}°,{" "}
-                              {survey.bus_station.longitude}°
-                            </p>
-                          </div>
+                        <div className="pt-2 border-t border-gray-100">
+                          <p className="text-gray-600">
+                            <span className="font-medium">Capacity:</span>{" "}
+                            {survey.bus_stand.capacity} passengers
+                          </p>
                         </div>
-                      </InfoCard>
-                    )}
-
-                    {/* Camera Details */}
-                    {survey.cameraDetails &&
-                      survey.cameraDetails.length > 0 && (
-                        <InfoCard title="Camera Installation" icon={Camera}>
-                          <div className="space-y-4">
-                            {survey.cameraDetails.map((camera, index) => (
-                              <div
-                                key={index}
-                                className="bg-gray-50 rounded-lg p-4"
-                              >
-                                <div className="flex items-start justify-between mb-2">
-                                  <p className="font-medium text-gray-900">
-                                    {camera.type}
-                                  </p>
-                                  <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                                    {camera.serialNumber}
-                                  </span>
-                                </div>
-                                <p className="text-gray-600 text-sm mb-2">
-                                  Location: {camera.poleLocation}
-                                </p>
-                                <p className="text-gray-600 text-sm flex items-center gap-1">
-                                  <Navigation className="w-3 h-3" />
-                                  {camera.gpsLatitude}°, {camera.gpsLongitude}°
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </InfoCard>
-                      )}
-                  </div>
+                      </div>
+                    </InfoCard>
+                  )}
                 </div>
 
-                {/* Photos Section */}
-                {survey.photos && survey.photos.length > 0 && (
-                  <div className="mt-8">
-                    <InfoCard title="Survey Photos" icon={ImageIcon}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {survey.photos.map((photo, index) => (
+                {/* Right Column */}
+                <div className="space-y-6">
+                  {/* Bus Station */}
+                  {survey.bus_station && (
+                    <InfoCard title="Bus Station Location" icon={MapPin}>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-gray-900 font-medium">
+                            {survey.bus_station.name}
+                          </p>
+                          <p className="text-gray-600">
+                            {survey.bus_station.address}
+                          </p>
+                        </div>
+                        <div className="pt-2 border-t border-gray-100">
+                          <p className="text-gray-600 flex items-center gap-2">
+                            <Navigation className="w-4 h-4" />
+                            GPS: {survey.bus_station.latitude}°,{" "}
+                            {survey.bus_station.longitude}°
+                          </p>
+                        </div>
+                      </div>
+                    </InfoCard>
+                  )}
+
+                  {/* Camera Details */}
+                  {survey.cameraDetails && survey.cameraDetails.length > 0 && (
+                    <InfoCard title="Camera Installation" icon={Camera}>
+                      <div className="space-y-4">
+                        {survey.cameraDetails.map((camera, index) => (
                           <div
                             key={index}
-                            className="group relative overflow-hidden rounded-lg bg-gray-100"
+                            className="bg-gray-50 rounded-lg p-4"
                           >
-                            <img
-                              src={`http://localhost:1337${photo.url}`}
-                              alt={`Survey Photo ${index + 1}`}
-                              className="w-full h-64 object-cover transition-transform duration-200 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-200" />
+                            <div className="flex items-start justify-between mb-2">
+                              <p className="font-medium text-gray-900">
+                                {camera.type}
+                              </p>
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                                {camera.serialNumber}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 text-sm mb-2">
+                              Location: {camera.poleLocation}
+                            </p>
+                            <p className="text-gray-600 text-sm flex items-center gap-1">
+                              <Navigation className="w-3 h-3" />
+                              {camera.gpsLatitude}°, {camera.gpsLongitude}°
+                            </p>
                           </div>
                         ))}
                       </div>
                     </InfoCard>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            ) : (
-              <p className="text-red-500">Survey not found.</p>
-            )}
-          </div>
+
+              {/* Photos Section */}
+              {survey.photos && survey.photos.length > 0 && (
+                <div className="mt-8">
+                  <InfoCard title="Survey Photos" icon={ImageIcon}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {survey.photos.map((photo, index) => (
+                        <div
+                          key={index}
+                          className="group relative overflow-hidden rounded-lg bg-gray-100"
+                        >
+                          <img
+                            src={`http://183.82.117.36:1337${photo.url}`}
+                            alt={`Survey Photo ${index + 1}`}
+                            className="w-full h-64 object-cover transition-transform duration-200 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-200" />
+                        </div>
+                      ))}
+                    </div>
+                  </InfoCard>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-red-500">Survey not found.</p>
+          )}
         </div>
       </div>
-    </PageLayout>
+    </div>
   );
 };
 

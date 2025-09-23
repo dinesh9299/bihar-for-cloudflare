@@ -8,6 +8,8 @@ import { ModernCard } from "@/components/ui/modern-card";
 import { PillButton } from "@/components/ui/pill-button";
 import { StatCard } from "@/components/ui/stat-card";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import { useToast } from "@/hooks/use-toast";
+
 import {
   Select,
   SelectContent,
@@ -29,11 +31,14 @@ import {
   Zap,
 } from "lucide-react";
 import axios from "axios";
-// Assuming api is configured to point to http://localhost:1337
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30d");
   const [division, setDivision] = useState("all");
+  const { toast } = useToast();
+
   const [analyticsData, setAnalyticsData] = useState({
     overview: {
       totalSurveys: 0,
@@ -53,12 +58,31 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const expirationTime = localStorage.getItem("tokenExpiration");
+    const currentTime = Date.now();
+
+    if (!token || (expirationTime && currentTime > parseInt(expirationTime))) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("tokenExpiration");
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+      });
+      router.push("/");
+      return;
+    }
+  }, []);
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:1337/api/surveys?populate=*"
-        );
+        const response = await api.get("/surveys?populate=*");
+
         const surveys = response.data.data;
 
         // Current date for time-based calculations
@@ -199,13 +223,13 @@ export default function AnalyticsPage() {
     return (
       <PageLayout>
         <div className="flex h-screen">
-          <ModernSidebar />
+          {/* <ModernSidebar /> */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <ModernHeader
+            {/* <ModernHeader
               title="Analytics Dashboard"
               subtitle="Loading insights..."
               showGPS={false}
-            />
+            /> */}
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -253,7 +277,7 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <main className="flex-1  p-6">
+      <main className="flex-1  ">
         {/* Controls */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">

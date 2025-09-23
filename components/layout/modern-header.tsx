@@ -1,7 +1,10 @@
 "use client";
 
+import { useLogout } from "@/app/logout";
 import { Badge } from "@/components/ui/badge";
-import axios from "axios";
+import api from "@/lib/api";
+import { Tooltip } from "antd";
+import { io } from "socket.io-client";
 import {
   Search,
   Bell,
@@ -10,6 +13,7 @@ import {
   Wifi,
   WifiOff,
   Menu,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -33,35 +37,78 @@ export function ModernHeader({
   gpsStatus = "connected",
   className,
   onToggleSidebar,
-  isSidebarOpen,
 }: ModernHeaderProps) {
-  const [user, setUser] = useState({
-    email: "",
-    id: 0,
-    username: "",
-    documentId: "",
-    role: {
-      name: "",
-      type: "",
-    },
-  });
+  const [user, setUser] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
-  const getuser = async () => {
-    const token = localStorage.getItem("token");
+  const getUser = async () => {
+    try {
+      const res = await api.get("/users/me?populate=*");
+      setUser(res.data);
+    } catch (err) {
+      console.error("Failed to fetch user:", err);
+    }
+  };
 
-    const res = await axios.get(
-      "http://localhost:1337/api/users/me?populate=*",
-      {
-        headers: { Authorization: `Bearer ${token}` },
+  const getNotifications = async () => {
+    try {
+      const res = await api.get(
+        "/notifications?populate=users_permissions_user&sort=createdAt:desc&pagination[pageSize]=5"
+      );
+      // Filter notifications to only include those where users_permissions_user.id matches user.id
+      if (user?.id) {
+        const filteredNotifications = res.data.data.filter(
+          (notification: any) =>
+            notification.users_permissions_user.id === user.id
+        );
+        setNotifications(filteredNotifications);
+      } else {
+        setNotifications(res.data.data); // Fallback to all notifications if user is not yet loaded
       }
-    );
-
-    setUser(res.data);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
   };
 
   useEffect(() => {
-    getuser();
+    getUser();
   }, []);
+
+  useEffect(() => {
+    getNotifications();
+
+    // ✅ connect socket
+    const socket = io(
+      process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+        "http://192.168.1.137:1337",
+      {
+        transports: ["websocket"],
+      }
+    );
+
+    // listen for new notifications
+    socket.on("new_boq", (data) => {
+      console.log("🔔 Live notification:", data);
+      // Only add the notification if it is for the current user
+      if (user?.id && data.users_permissions_user?.id === user.id) {
+        setNotifications((prev) => [
+          {
+            id: Date.now(),
+            message: data.message,
+            createdAt: new Date().toISOString(),
+            users_permissions_user: data.users_permissions_user,
+          },
+          ...prev,
+        ]);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]); // Re-run when user changes
+
+  const logout = useLogout();
 
   return (
     <header
@@ -69,7 +116,7 @@ export function ModernHeader({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-6">
-          {/* Hamburger menu for mobile */}
+          {/* Sidebar toggle */}
           <button
             onClick={onToggleSidebar}
             className="md:hidden p-2 rounded-xl bg-white/50 hover:bg-white/70 transition-colors"
@@ -103,6 +150,7 @@ export function ModernHeader({
           )}
         </div>
 
+        {/* Right side */}
         <div className="flex items-center space-x-4">
           {showSearch && (
             <div className="relative">
@@ -110,28 +158,61 @@ export function ModernHeader({
               <input
                 type="text"
                 placeholder="Search surveys, locations..."
-                className="pl-10 pr-4 py-2 w-80 h-10 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 placeholder-gray-500"
+                className="pl-10 pr-4 py-2 w-80 h-10 bg-white/50 border rounded-full text-sm"
               />
             </div>
           )}
 
-          <div className="flex items-center space-x-2">
-            <button className="relative p-2 bg-white/50 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/70 transition-colors">
+          {/* 🔔 Notifications */}
+          <Tooltip
+            title={
+              notifications.length > 0 ? (
+                <div className="max-h-60 overflow-y-auto w-64">
+                  {notifications.map((n: any, i: number) => (
+                    <div key={i} className="px-2 py-2 border-b text-sm">
+                      {n.message}
+                      <div className="text-xs text-gray-500">
+                        {new Date(n.createdAt).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                "No notifications"
+              )
+            }
+          >
+            <button className="relative p-2 bg-white/50 rounded-full border hover:bg-white/70">
               <Bell className="w-5 h-5 text-gray-600" />
-              <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-gradient-to-r from-amber-400 to-yellow-500 text-white border-0">
-                3
-              </Badge>
+              {notifications.length > 0 && (
+                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-gradient-to-r from-amber-400 to-yellow-500 text-white border-0">
+                  {notifications.length}
+                </Badge>
+              )}
             </button>
+          </Tooltip>
 
-            <Link href="/settings">
-              <button className="p-2 bg-white/50 backdrop-blur-sm rounded-full border border-white/30 hover:bg-white/70 transition-colors">
-                <Settings className="w-5 h-5 text-gray-600" />
-              </button>
-            </Link>
+          {/* Settings */}
+          <Link href="/settings">
+            <button className="p-2 bg-white/50 rounded-full border hover:bg-white/70">
+              <Settings className="w-5 h-5 text-gray-600" />
+            </button>
+          </Link>
 
-            <div className="w-px h-6 bg-gray-300" />
+          {/* Logout */}
+          <Tooltip title="Logout" placement="bottom">
+            <button
+              onClick={logout}
+              className="p-2 bg-white/50 rounded-full border hover:bg-white/70"
+            >
+              <LogOut className="w-5 h-5 text-gray-600" />
+            </button>
+          </Tooltip>
 
-            <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+          {/* User info */}
+          <div className="w-px h-6 bg-gray-300" />
+          {user && (
+            <div className="flex items-center space-x-3 bg-white/50 rounded-full px-4 py-2 border">
               <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
@@ -142,7 +223,7 @@ export function ModernHeader({
                 <p className="text-xs text-gray-600">Online</p>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </header>

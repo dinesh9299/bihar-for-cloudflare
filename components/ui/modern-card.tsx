@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
+import type React from "react";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface ModernCardProps {
-  children: React.ReactNode
-  className?: string
-  hover?: boolean
-  glass?: boolean
-  padding?: "sm" | "md" | "lg" | "xl"
-  rounded?: "md" | "lg" | "xl" | "2xl" | "3xl"
-  onClick?: () => void
+  children: React.ReactNode;
+  className?: string;
+  hover?: boolean;
+  glass?: boolean;
+  padding?: "sm" | "md" | "lg" | "xl";
+  rounded?: "md" | "lg" | "xl" | "2xl" | "3xl";
+  onClick?: () => void;
 }
 
 export function ModernCard({
@@ -28,7 +28,7 @@ export function ModernCard({
     md: "p-6",
     lg: "p-8",
     xl: "p-10",
-  }
+  };
 
   const roundedClasses = {
     md: "rounded-xl",
@@ -36,11 +36,11 @@ export function ModernCard({
     xl: "rounded-3xl",
     "2xl": "rounded-[2rem]",
     "3xl": "rounded-[3rem]",
-  }
+  };
 
   return (
     <motion.div
-      whileHover={hover ? { y: -4, scale: 1.02 } : undefined}
+      // whileHover={hover ? { y: -4, scale: 1.02 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
@@ -51,7 +51,7 @@ export function ModernCard({
         roundedClasses[rounded],
         paddingClasses[padding],
         onClick && "cursor-pointer",
-        className,
+        className
       )}
       onClick={onClick}
     >
@@ -61,5 +61,5 @@ export function ModernCard({
       {/* Content */}
       <div className="relative z-10">{children}</div>
     </motion.div>
-  )
+  );
 }

@@ -17,6 +17,8 @@ import {
   ChevronRight,
   Plus,
   X,
+  TableProperties,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PillButton } from "@/components/ui/pill-button";
@@ -28,6 +30,9 @@ const navigation = [
   { name: "Cameras", href: "/cameras", icon: Camera },
   { name: "Locations", href: "/locations", icon: MapPin },
   { name: "Map View", href: "/map", icon: Map },
+  { name: "BOQ", href: "/test", icon: TableProperties },
+  { name: "Products", href: "/products", icon: ShoppingCart },
+
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Team", href: "/team", icon: Users },
@@ -63,7 +68,7 @@ export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
 
     try {
       const res = await axios.get(
-        "http://localhost:1337/api/users/me?populate=*",
+        "http://183.82.117.36:1337/api/users/me?populate=*",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -84,10 +89,11 @@ export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
       animate={{ width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className={cn(
-        "bg-gradient-to-b from-blue-50 to-green-50 border-r border-white/30 backdrop-blur-md flex flex-col h-screen overflow-y-auto md:w-auto",
+        "bg-gradient-to-b from-blue-50 to-green-50 border-r border-white/30 backdrop-blur-md flex flex-col h-screen overflow-y-auto custom-scrollbar md:w-auto",
         isOpen ? "translate-x-0" : "-translate-x-full",
         "md:translate-x-0 transition-transform duration-300 ease-in-out z-50"
       )}
+      style={{ scrollbarGutter: "stable" }}
     >
       {/* Header */}
       <div className="p-6 border-b border-white/30 flex items-center justify-between">
@@ -155,13 +161,21 @@ export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className={cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-200",
+                  "flex items-center rounded-2xl transition-all duration-200",
+                  isCollapsed
+                    ? "justify-center px-0 py-3"
+                    : "px-4 py-3 space-x-3",
                   isActive
                     ? "bg-gradient-to-r to-[#00ADE7] from-[#305292] text-white shadow-lg"
                     : "text-gray-700 hover:bg-white/50 hover:text-gray-900"
                 )}
               >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <item.icon
+                  className={cn(
+                    "w-5 h-5 flex-shrink-0",
+                    isCollapsed ? "mx-auto" : ""
+                  )}
+                />
                 {!isCollapsed && (
                   <motion.span
                     initial={{ opacity: 1 }}

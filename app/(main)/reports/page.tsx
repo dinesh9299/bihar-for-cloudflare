@@ -6,6 +6,8 @@ import { ModernSidebar } from "@/components/layout/modern-sidebar";
 import { ModernHeader } from "@/components/layout/modern-header";
 import { ModernCard } from "@/components/ui/modern-card";
 import { PillButton } from "@/components/ui/pill-button";
+import { useToast } from "@/hooks/use-toast";
+
 import {
   Select,
   SelectContent,
@@ -24,7 +26,8 @@ import {
   Camera,
 } from "lucide-react";
 import axios from "axios";
-// Assuming api is configured to point to http://localhost:1337
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function Reports() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
@@ -39,13 +42,32 @@ export default function Reports() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const expirationTime = localStorage.getItem("tokenExpiration");
+    const currentTime = Date.now();
+
+    if (!token || (expirationTime && currentTime > parseInt(expirationTime))) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("tokenExpiration");
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+      });
+      router.push("/");
+      return;
+    }
+  }, []);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:1337/api/surveys?populate=*"
-        );
+        const response = await api.get("/surveys?populate=*");
+
         const surveys = response.data.data;
 
         // Calculate totals
@@ -173,7 +195,7 @@ export default function Reports() {
 
   return (
     <div>
-      <main className="flex-1 p-6">
+      <main className="flex-1">
         {/* Header Controls */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">

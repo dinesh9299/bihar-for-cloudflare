@@ -35,10 +35,10 @@ import api from "@/lib/api";
 interface FormData {
   surveyName: string;
   locationType: string;
-  division?: string; // Optional for MSRTC
-  depot?: string; // Optional for MSRTC
-  busStation?: string; // Optional for MSRTC
-  busStand?: string; // Optional for MSRTC
+  division?: string; // Stores documentId for MSRTC
+  depot?: string; // Stores documentId for MSRTC
+  busStation?: string; // Stores documentId for MSRTC
+  busStand?: string; // Stores documentId for MSRTC
   locationDetails?: string; // Optional for non-MSRTC
   surveyPurpose: string;
   cameraDetails: {
@@ -52,6 +52,29 @@ interface FormData {
   }[];
   workStatus: string;
   notes: string;
+}
+
+interface Division {
+  documentId: string;
+  name: string;
+}
+
+interface Depot {
+  documentId: string;
+  name: string;
+  division: string; // Stores documentId of Division
+}
+
+interface BusStation {
+  documentId: string;
+  name: string;
+  depot: string; // Stores documentId of Depot
+}
+
+interface BusStand {
+  documentId: string;
+  name: string;
+  busStation: string; // Stores documentId of BusStation
 }
 
 export default function NewSurvey() {
@@ -76,18 +99,26 @@ export default function NewSurvey() {
     notes: "",
   });
 
-  const [divisions, setDivisions] = useState<{ id: string; name: string }[]>(
-    []
-  );
-  const [depots, setDepots] = useState<
-    { id: string; name: string; division: string }[]
-  >([]);
-  const [busStations, setBusStations] = useState<
-    { id: string; name: string; depot: string }[]
-  >([]);
-  const [busStands, setBusStands] = useState<
-    { id: string; name: string; busStation: string }[]
-  >([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [depots, setDepots] = useState<Depot[]>([]);
+  const [busStations, setBusStations] = useState<BusStation[]>([]);
+  const [busStands, setBusStands] = useState<BusStand[]>([]);
+
+  // Debug useEffect to monitor state changes
+  useEffect(() => {
+    console.log("State updated - Divisions:", divisions.length, divisions);
+    console.log("State updated - Depots:", depots.length, depots.slice(0, 3));
+    console.log(
+      "State updated - Bus Stations:",
+      busStations.length,
+      busStations.slice(0, 3)
+    );
+    console.log(
+      "State updated - Bus Stands:",
+      busStands.length,
+      busStands.slice(0, 3)
+    );
+  }, [divisions, depots, busStations, busStands]);
 
   const getGPSLocation = () => {
     setIsRefreshingGPS(true);
@@ -134,41 +165,88 @@ export default function NewSurvey() {
 
   useEffect(() => {
     getGPSLocation();
-    axios.get("http://localhost:1337/api/divisions").then((res) => {
+  }, []);
+
+  // Load divisions on mount
+  useEffect(() => {
+    api.get("/divisions?pagination[pageSize]=1000").then((res) => {
       setDivisions(
-        res.data.data.map((d: any) => ({ id: d.id.toString(), name: d.name }))
-      );
-    });
-    axios.get("http://localhost:1337/api/depots?populate=*").then((res) => {
-      setDepots(
         res.data.data.map((d: any) => ({
-          id: d.id.toString(),
+          documentId: d.documentId,
           name: d.name,
-          division: d.division?.id?.toString() || "",
         }))
       );
     });
-    axios
-      .get("http://localhost:1337/api/bus-stations?populate=*")
-      .then((res) => {
-        setBusStations(
-          res.data.data.map((d: any) => ({
-            id: d.id.toString(),
-            name: d.name,
-            depot: d.depot?.id?.toString() || "",
-          }))
-        );
-      });
-    axios.get("http://localhost:1337/api/bus-stands?populate=*").then((res) => {
-      const busStandsData = res.data.data.map((d: any) => ({
-        id: d.id.toString(),
-        name: d.name,
-        busStation: d.bus_stations?.[0]?.id?.toString() || "",
-      }));
-      console.log("Fetched busStands:", busStandsData);
-      setBusStands(busStandsData);
-    });
   }, []);
+
+  // When division changes → fetch depots
+  useEffect(() => {
+    if (formData.division) {
+      api
+        .get(
+          `/depots?filters[division][documentId][$eq]=${formData.division}&pagination[pageSize]=1000`
+        )
+        .then((res) => {
+          setDepots(
+            res.data.data.map((d: any) => ({
+              documentId: d.documentId,
+              name: d.name,
+              division: d.division?.documentId?.toString() || "",
+            }))
+          );
+        });
+      setFormData((prev) => ({
+        ...prev,
+        depot: undefined,
+        busStation: undefined,
+        busStand: undefined,
+      }));
+    }
+  }, [formData.division]);
+
+  // When depot changes → fetch bus stations
+  useEffect(() => {
+    if (formData.depot) {
+      api
+        .get(
+          `/bus-stations?filters[depot][documentId][$eq]=${formData.depot}&pagination[pageSize]=1000`
+        )
+        .then((res) => {
+          setBusStations(
+            res.data.data.map((s: any) => ({
+              documentId: s.documentId,
+              name: s.name,
+              depot: s.depot?.documentId?.toString() || "",
+            }))
+          );
+        });
+      setFormData((prev) => ({
+        ...prev,
+        busStation: undefined,
+        busStand: undefined,
+      }));
+    }
+  }, [formData.depot]);
+
+  // When station changes → fetch bus stands
+  useEffect(() => {
+    if (formData.busStation) {
+      api
+        .get(
+          `/bus-stands?filters[bus_station][documentId][$eq]=${formData.busStation}&pagination[pageSize]=1000`
+        )
+        .then((res) => {
+          setBusStands(
+            res.data.data.map((s: any) => ({
+              documentId: s.documentId,
+              name: s.name,
+              busStation: s.bus_station?.documentId?.toString() || "",
+            }))
+          );
+        });
+      setFormData((prev) => ({ ...prev, busStand: undefined }));
+    }
+  }, [formData.busStation]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -314,8 +392,8 @@ export default function NewSurvey() {
     setIsSubmitting(true);
 
     try {
-      // Optional: Check if surveyName is unique before submitting
-      const checkResponse = await api.get<StrapiResponse<StrapiSurvey[]>>(
+      // Check if surveyName is unique
+      const checkResponse = await api.get(
         `/surveys?filters[surveyName][$eq]=${encodeURIComponent(
           formData.surveyName
         )}`
@@ -331,14 +409,11 @@ export default function NewSurvey() {
       }
 
       // Upload photos if any
-      let photoIds: number[] = [];
+      let photoIds: string[] = [];
       if (photos.length > 0) {
         const form = new FormData();
         photos.forEach((file) => form.append("files", file));
-        const uploadRes = await api.post<StrapiResponse<StrapiUpload[]>>(
-          "/upload",
-          form
-        );
+        const uploadRes = await api.post("/upload", form);
         photoIds = uploadRes.data.map((img: any) => img.id);
       }
 
@@ -351,10 +426,10 @@ export default function NewSurvey() {
           notes: formData.notes,
           ...(formData.locationType === "MSRTC"
             ? {
-                division: Number(formData.division),
-                depot: Number(formData.depot),
-                bus_station: Number(formData.busStation),
-                bus_stand: Number(formData.busStand),
+                division: formData.division, // Use documentId
+                depot: formData.depot, // Use documentId
+                bus_station: formData.busStation, // Use documentId
+                bus_stand: formData.busStand, // Use documentId
               }
             : { locationDetails: formData.locationDetails }),
           cameraDetails: formData.cameraDetails.map((camera) => {
@@ -365,10 +440,8 @@ export default function NewSurvey() {
         },
       };
 
-      const res = await api.post<StrapiResponse<StrapiSurvey>>(
-        "/surveys",
-        payload
-      );
+      // Uncomment to make the API call
+      const res = await api.post("/surveys", payload);
       console.log("Response:", res.data);
 
       // Clear draft from localStorage
@@ -387,7 +460,6 @@ export default function NewSurvey() {
         error.response?.data?.error?.message ||
         "Failed to create survey. Please try again.";
 
-      // Handle unique field error specifically
       if (
         error.response?.data?.error?.name === "ValidationError" &&
         errorMessage.includes("must be unique")
@@ -474,6 +546,7 @@ export default function NewSurvey() {
                   </div>
                   {formData.locationType === "MSRTC" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Division */}
                       <div className="space-y-2">
                         <Label htmlFor="division">Division *</Label>
                         <Select
@@ -494,13 +567,18 @@ export default function NewSurvey() {
                           </SelectTrigger>
                           <SelectContent>
                             {divisions.map((division) => (
-                              <SelectItem key={division.id} value={division.id}>
+                              <SelectItem
+                                key={division.documentId}
+                                value={division.documentId}
+                              >
                                 {division.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Depot */}
                       <div className="space-y-2">
                         <Label htmlFor="depot">Depot Name *</Label>
                         <Select
@@ -519,18 +597,19 @@ export default function NewSurvey() {
                             <SelectValue placeholder="Select Depot" />
                           </SelectTrigger>
                           <SelectContent>
-                            {depots
-                              .filter(
-                                (depot) => depot.division === formData.division
-                              )
-                              .map((depot) => (
-                                <SelectItem key={depot.id} value={depot.id}>
-                                  {depot.name}
-                                </SelectItem>
-                              ))}
+                            {depots.map((depot) => (
+                              <SelectItem
+                                key={depot.documentId}
+                                value={depot.documentId}
+                              >
+                                {depot.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Bus Station */}
                       <div className="space-y-2">
                         <Label htmlFor="busStation">Bus Station *</Label>
                         <Select
@@ -548,18 +627,19 @@ export default function NewSurvey() {
                             <SelectValue placeholder="Select Bus Station" />
                           </SelectTrigger>
                           <SelectContent>
-                            {busStations
-                              .filter(
-                                (station) => station.depot === formData.depot
-                              )
-                              .map((station) => (
-                                <SelectItem key={station.id} value={station.id}>
-                                  {station.name}
-                                </SelectItem>
-                              ))}
+                            {busStations.map((station) => (
+                              <SelectItem
+                                key={station.documentId}
+                                value={station.documentId}
+                              >
+                                {station.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Bus Stand */}
                       <div className="space-y-2">
                         <Label htmlFor="busStand">Bus Stand *</Label>
                         <Select
@@ -573,16 +653,14 @@ export default function NewSurvey() {
                             <SelectValue placeholder="Select Bus Stand" />
                           </SelectTrigger>
                           <SelectContent>
-                            {busStands
-                              .filter(
-                                (stand) =>
-                                  stand.busStation === formData.busStation
-                              )
-                              .map((stand) => (
-                                <SelectItem key={stand.id} value={stand.id}>
-                                  {stand.name}
-                                </SelectItem>
-                              ))}
+                            {busStands.map((stand) => (
+                              <SelectItem
+                                key={stand.documentId}
+                                value={stand.documentId}
+                              >
+                                {stand.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

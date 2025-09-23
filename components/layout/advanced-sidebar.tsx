@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   MapPin,
@@ -18,10 +18,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-} from "lucide-react"
+} from "lucide-react";
 
 interface SidebarProps {
-  className?: string
+  className?: string;
 }
 
 const navigation = [
@@ -73,18 +73,18 @@ const navigation = [
     icon: Settings,
     badge: null,
   },
-]
+];
 
 export function AdvancedSidebar({ className }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
-  const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div
       className={cn(
         "flex flex-col h-full bg-white border-r border-slate-200 transition-all duration-300",
         collapsed ? "w-16" : "w-64",
-        className,
+        className
       )}
     >
       {/* Header */}
@@ -95,20 +95,31 @@ export function AdvancedSidebar({ className }: SidebarProps) {
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">MSRTC CCTV</h1>
+              <h1 className="text-lg font-semibold text-slate-900">
+                MSRTC CCTV
+              </h1>
               <p className="text-xs text-slate-500">Survey System</p>
             </div>
           </div>
         )}
-        <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="p-2">
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCollapsed(!collapsed)}
+          className="p-2"
+        >
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
         </Button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href;
           return (
             <Link key={item.name} href={item.href}>
               <Button
@@ -116,8 +127,9 @@ export function AdvancedSidebar({ className }: SidebarProps) {
                 className={cn(
                   "w-full justify-start h-12 transition-all duration-200",
                   collapsed ? "px-3" : "px-4",
-                  isActive && "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg",
-                  !isActive && "hover:bg-slate-100",
+                  isActive &&
+                    "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg",
+                  !isActive && "hover:bg-slate-100"
                 )}
               >
                 <item.icon className={cn("w-5 h-5", collapsed ? "" : "mr-3")} />
@@ -133,7 +145,7 @@ export function AdvancedSidebar({ className }: SidebarProps) {
                 )}
               </Button>
             </Link>
-          )
+          );
         })}
       </nav>
 
@@ -145,7 +157,9 @@ export function AdvancedSidebar({ className }: SidebarProps) {
               <Users className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 truncate">Survey Team</p>
+              <p className="text-sm font-medium text-slate-900 truncate">
+                Survey Team
+              </p>
               <p className="text-xs text-slate-500 truncate">Pune Division</p>
             </div>
             <Button variant="ghost" size="sm" className="p-1">
@@ -159,5 +173,5 @@ export function AdvancedSidebar({ className }: SidebarProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
