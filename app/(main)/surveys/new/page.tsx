@@ -1,1046 +1,323 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect } from "react";
-import { PageLayout } from "@/components/layout/page-layout";
-import { ModernSidebar } from "@/components/layout/modern-sidebar";
-import { ModernHeader } from "@/components/layout/modern-header";
-import { ModernCard } from "@/components/ui/modern-card";
-import { PillButton } from "@/components/ui/pill-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { motion } from "framer-motion";
-import {
-  MapPin,
-  Camera,
-  Upload,
-  Navigation,
-  ImageIcon,
-  X,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Input, Select, Upload, Button, message, Spin } from "antd";
+import { UploadOutlined, FileAddOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import api from "@/lib/api";
+import axios from "axios";
+import debounce from "lodash.debounce"; // install with: npm i lodash.debounce
 
-interface FormData {
-  surveyName: string;
-  locationType: string;
-  division?: string; // Stores documentId for MSRTC
-  depot?: string; // Stores documentId for MSRTC
-  busStation?: string; // Stores documentId for MSRTC
-  busStand?: string; // Stores documentId for MSRTC
-  locationDetails?: string; // Optional for non-MSRTC
-  surveyPurpose: string;
-  cameraDetails: {
-    type: string;
-    serialNumber: string;
-    poleLocation: string;
-    distanceBetweenCameras: string;
-    direction: string;
-    gpsLatitude: string;
-    gpsLongitude: string;
-  }[];
-  workStatus: string;
-  notes: string;
-}
-
-interface Division {
-  documentId: string;
-  name: string;
-}
-
-interface Depot {
-  documentId: string;
-  name: string;
-  division: string; // Stores documentId of Division
-}
-
-interface BusStation {
-  documentId: string;
-  name: string;
-  depot: string; // Stores documentId of Depot
-}
-
-interface BusStand {
-  documentId: string;
-  name: string;
-  busStation: string; // Stores documentId of BusStation
-}
-
-export default function NewSurvey() {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
-  const [gpsStatus, setGpsStatus] = useState<"loading" | "success" | "error">(
-    "loading"
-  );
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRefreshingGPS, setIsRefreshingGPS] = useState(false);
-  const { toast } = useToast();
+export default function NewSurveyPage() {
   const router = useRouter();
 
-  const [formData, setFormData] = useState<FormData>({
-    surveyName: "",
-    locationType: "",
-    surveyPurpose: "",
-    cameraDetails: [],
-    workStatus: "",
-    notes: "",
-  });
+  const [surveyName, setSurveyName] = useState("");
+  const [surveyType, setSurveyType] = useState<"Project" | "Customer" | "">("");
+  const [projects, setProjects] = useState<any[]>([]);
+  const [sites, setSites] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedSite, setSelectedSite] = useState<any>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [surveyPurpose, setSurveyPurpose] = useState("");
+  const [workStatus, setWorkStatus] = useState("");
+  const [photoFiles, setPhotoFiles] = useState<any[]>([]);
+  const [additionalNotes, setAdditionalNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const [divisions, setDivisions] = useState<Division[]>([]);
-  const [depots, setDepots] = useState<Depot[]>([]);
-  const [busStations, setBusStations] = useState<BusStation[]>([]);
-  const [busStands, setBusStands] = useState<BusStand[]>([]);
-
-  // Debug useEffect to monitor state changes
+  // 🔹 Fetch all projects (for selection)
   useEffect(() => {
-    console.log("State updated - Divisions:", divisions.length, divisions);
-    console.log("State updated - Depots:", depots.length, depots.slice(0, 3));
-    console.log(
-      "State updated - Bus Stations:",
-      busStations.length,
-      busStations.slice(0, 3)
-    );
-    console.log(
-      "State updated - Bus Stands:",
-      busStands.length,
-      busStands.slice(0, 3)
-    );
-  }, [divisions, depots, busStations, busStands]);
-
-  const getGPSLocation = () => {
-    setIsRefreshingGPS(true);
-    setGpsStatus("loading");
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          setGpsStatus("success");
-          setIsRefreshingGPS(false);
-          toast({
-            variant: "success",
-            title: "GPS Location Updated",
-            description: `${position.coords.latitude.toFixed(
-              6
-            )}, ${position.coords.longitude.toFixed(6)}`,
-          });
-        },
-        (error) => {
-          console.error("GPS Error:", error);
-          setGpsStatus("error");
-          setIsRefreshingGPS(false);
-          toast({
-            variant: "destructive",
-            title: "GPS Error",
-            description: "Unable to get your current location.",
-          });
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      setGpsStatus("error");
-      setIsRefreshingGPS(false);
-      toast({
-        variant: "destructive",
-        title: "GPS Not Supported",
-      });
-    }
-  };
-
-  useEffect(() => {
-    getGPSLocation();
-  }, []);
-
-  // Load divisions on mount
-  useEffect(() => {
-    api.get("/divisions?pagination[pageSize]=1000").then((res) => {
-      setDivisions(
-        res.data.data.map((d: any) => ({
-          documentId: d.documentId,
-          name: d.name,
-        }))
-      );
-    });
-  }, []);
-
-  // When division changes → fetch depots
-  useEffect(() => {
-    if (formData.division) {
+    if (surveyType === "Project") {
       api
-        .get(
-          `/depots?filters[division][documentId][$eq]=${formData.division}&pagination[pageSize]=1000`
-        )
-        .then((res) => {
-          setDepots(
-            res.data.data.map((d: any) => ({
-              documentId: d.documentId,
-              name: d.name,
-              division: d.division?.documentId?.toString() || "",
-            }))
-          );
-        });
-      setFormData((prev) => ({
-        ...prev,
-        depot: undefined,
-        busStation: undefined,
-        busStand: undefined,
-      }));
+        .get("/projects?populate=site_1s")
+        .then((res) => setProjects(res.data.data))
+        .catch(() => message.error("Failed to load projects"));
     }
-  }, [formData.division]);
+  }, [surveyType]);
 
-  // When depot changes → fetch bus stations
+  // 🔹 Fetch customers (ERP)
   useEffect(() => {
-    if (formData.depot) {
-      api
-        .get(
-          `/bus-stations?filters[depot][documentId][$eq]=${formData.depot}&pagination[pageSize]=1000`
-        )
-        .then((res) => {
-          setBusStations(
-            res.data.data.map((s: any) => ({
-              documentId: s.documentId,
-              name: s.name,
-              depot: s.depot?.documentId?.toString() || "",
-            }))
-          );
-        });
-      setFormData((prev) => ({
-        ...prev,
-        busStation: undefined,
-        busStand: undefined,
-      }));
+    if (surveyType === "Customer") {
+      fetchCustomers();
+      //  const res =  axios.get(`/api/customers`);
+      // .then((res) => setCustomers(res.data.data));
+      // .catch(() => message.error("Failed to load customers"));
     }
-  }, [formData.depot]);
+  }, [surveyType]);
 
-  // When station changes → fetch bus stands
-  useEffect(() => {
-    if (formData.busStation) {
-      api
-        .get(
-          `/bus-stands?filters[bus_station][documentId][$eq]=${formData.busStation}&pagination[pageSize]=1000`
-        )
-        .then((res) => {
-          setBusStands(
-            res.data.data.map((s: any) => ({
-              documentId: s.documentId,
-              name: s.name,
-              busStation: s.bus_station?.documentId?.toString() || "",
-            }))
-          );
-        });
-      setFormData((prev) => ({ ...prev, busStand: undefined }));
-    }
-  }, [formData.busStation]);
+  // 🔹 Fetch Customers (Dynamic with Search)
+  const [customerLoading, setCustomerLoading] = useState(false);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setPhotos([...photos, ...newFiles]);
-      toast({
-        variant: "success",
-        title: "Photos Uploaded",
-        description: `${newFiles.length} photo(s) added`,
-      });
-    }
-  };
-
-  const handleCameraCapture = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.capture = "environment";
-    input.onchange = (e) => {
-      if ((e.target as HTMLInputElement).files) {
-        const newFiles = Array.from((e.target as HTMLInputElement).files);
-        setPhotos([...photos, ...newFiles]);
-        toast({ variant: "success", title: "Photo Captured" });
-      }
-    };
-    input.click();
-  };
-
-  const removePhoto = (index: number) => {
-    setPhotos(photos.filter((_, i) => i !== index));
-    toast({ variant: "success", title: "Photo Removed" });
-  };
-
-  const addCameraDetail = () => {
-    setFormData({
-      ...formData,
-      cameraDetails: [
-        ...formData.cameraDetails,
-        {
-          type: "",
-          serialNumber: "",
-          poleLocation: "",
-          distanceBetweenCameras: "",
-          direction: "",
-          gpsLatitude: location?.lat.toString() || "",
-          gpsLongitude: location?.lng.toString() || "",
-        },
-      ],
-    });
-    toast({ variant: "success", title: "Camera Added" });
-  };
-
-  const removeCameraDetail = (index: number) => {
-    setFormData({
-      ...formData,
-      cameraDetails: formData.cameraDetails.filter((_, i) => i !== index),
-    });
-    toast({ variant: "success", title: "Camera Removed" });
-  };
-
-  const updateCameraDetail = (index: number, field: string, value: string) => {
-    const updatedDetails = [...formData.cameraDetails];
-    updatedDetails[index] = { ...updatedDetails[index], [field]: value };
-    setFormData({ ...formData, cameraDetails: updatedDetails });
-  };
-
-  const applyCurrentLocationToCamera = (index: number) => {
-    if (location) {
-      updateCameraDetail(index, "gpsLatitude", location.lat.toString());
-      updateCameraDetail(index, "gpsLongitude", location.lng.toString());
-      toast({ variant: "success", title: "GPS Applied" });
-    }
-  };
-
-  const handleSaveDraft = () => {
-    localStorage.setItem(
-      "survey_draft",
-      JSON.stringify({
-        ...formData,
-        location,
-        photos: photos.map((p) => p.name),
-      })
-    );
-    toast({ variant: "success", title: "Draft Saved" });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validation for required fields
-    if (!formData.surveyName || !formData.locationType) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Survey name and location type are required",
-      });
-      return;
-    }
-    if (formData.locationType === "MSRTC") {
-      if (
-        !formData.division ||
-        !formData.depot ||
-        !formData.busStation ||
-        !formData.busStand
-      ) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: "All MSRTC location fields are required",
-        });
-        return;
-      }
-    } else if (!formData.locationDetails) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Location details are required",
-      });
-      return;
-    }
-    if (!formData.surveyPurpose || !formData.workStatus) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Survey purpose and work status are required",
-      });
-      return;
-    }
-    if (
-      formData.cameraDetails.some(
-        (camera) => !camera.type || !camera.poleLocation
-      )
-    ) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description:
-          "Camera type and pole location are required for all cameras",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  const fetchCustomers = useCallback(async (search: string = "") => {
+    setCustomerLoading(true);
     try {
-      // Check if surveyName is unique
-      const checkResponse = await api.get(
-        `/surveys?filters[surveyName][$eq]=${encodeURIComponent(
-          formData.surveyName
-        )}`
+      const res = await axios.get(`/api/customers`, {
+        params: { search }, // your backend should support search filtering
+      });
+      setCustomers(res.data.customers || []);
+    } catch (err) {
+      console.error("❌ Failed to load customers:", err);
+      message.error("Failed to load customers");
+    } finally {
+      setCustomerLoading(false);
+    }
+  }, []);
+
+  const debouncedSearch = useRef(
+    debounce((value: string) => {
+      fetchCustomers(value);
+    }, 500)
+  ).current;
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await api.get("/users/me?populate=*");
+      setCurrentUser(res.data);
+    } catch (err) {
+      console.error("❌ Failed to fetch current user:", err);
+      message.error("Failed to fetch user details. Please log in again.");
+      router.push("/");
+    }
+  };
+
+  // ✅ 3. UseEffect
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  // 🔹 Fetch sites for selected project
+  useEffect(() => {
+    if (selectedProject) {
+      api
+        .get(
+          `/site1s?filters[project][documentId][$eq]=${selectedProject.documentId}`
+        )
+        .then((res) => setSites(res.data.data))
+        .catch(() => message.error("Failed to load sites"));
+    } else {
+      setSites([]);
+    }
+  }, [selectedProject]);
+
+  // 🔹 Submit
+  const handleSubmit = async () => {
+    if (!surveyName || !surveyType) {
+      message.warning("Please fill all required fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const uploadedImages = await Promise.all(
+        photoFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append("files", file.originFileObj);
+          const res = await api.post("/upload", formData);
+          return res.data[0];
+        })
       );
-      if (checkResponse.data.data.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Validation Error",
-          description: `Survey name "${formData.surveyName}" is already taken. Please choose a different name.`,
-        });
-        setIsSubmitting(false);
-        return;
-      }
 
-      // Upload photos if any
-      let photoIds: string[] = [];
-      if (photos.length > 0) {
-        const form = new FormData();
-        photos.forEach((file) => form.append("files", file));
-        const uploadRes = await api.post("/upload", form);
-        photoIds = uploadRes.data.map((img: any) => img.id);
-      }
-
-      // Prepare payload
       const payload = {
         data: {
-          surveyName: formData.surveyName,
-          surveyPurpose: formData.surveyPurpose,
-          workStatus: formData.workStatus,
-          notes: formData.notes,
-          ...(formData.locationType === "MSRTC"
-            ? {
-                division: formData.division, // Use documentId
-                depot: formData.depot, // Use documentId
-                bus_station: formData.busStation, // Use documentId
-                bus_stand: formData.busStand, // Use documentId
-              }
-            : { locationDetails: formData.locationDetails }),
-          cameraDetails: formData.cameraDetails.map((camera) => {
-            const { id, ...rest } = camera; // Remove id if present
-            return rest;
-          }),
-          photos: photoIds,
+          survey_name: surveyName,
+          survey_type: surveyType,
+          project:
+            surveyType === "Project" && selectedProject
+              ? { connect: [{ documentId: selectedProject.documentId }] }
+              : undefined,
+          site_1:
+            surveyType === "Project" && selectedSite
+              ? { connect: [{ documentId: selectedSite.documentId }] }
+              : undefined,
+          customer:
+            surveyType === "Customer" && selectedCustomer
+              ? {
+                  name: selectedCustomer.name,
+                  customer_name: selectedCustomer.customer_name,
+                }
+              : undefined,
+
+          survey_purpose: surveyPurpose,
+          work_status: workStatus,
+          photo_documentation: uploadedImages.map((img) => img.id),
+          additional_notes: additionalNotes,
+          createdby: { connect: [{ documentId: currentUser?.documentId }] }, // ✅ explicit link
         },
       };
 
-      // Uncomment to make the API call
-      const res = await api.post("/surveys", payload);
-      console.log("Response:", res.data);
-
-      // Clear draft from localStorage
-      localStorage.removeItem("survey_draft");
-
-      toast({
-        variant: "success",
-        title: "Survey Added Successfully",
-        description: `${formData.surveyName} saved`,
-      });
-
-      setTimeout(() => router.push("/surveys"), 1500);
-    } catch (error: any) {
-      console.error("Error creating survey:", error.response?.data?.error);
-      const errorMessage =
-        error.response?.data?.error?.message ||
-        "Failed to create survey. Please try again.";
-
-      if (
-        error.response?.data?.error?.name === "ValidationError" &&
-        errorMessage.includes("must be unique")
-      ) {
-        toast({
-          variant: "destructive",
-          title: "Unique Field Error",
-          description: `Survey name "${formData.surveyName}" is already taken. Please choose a different name.`,
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: errorMessage,
-        });
-      }
+      await api.post("/survey1s", payload);
+      message.success("✅ Survey created successfully!");
+      router.push("/surveys");
+    } catch (err: any) {
+      console.error("❌ Failed to create survey:", err);
+      message.error(
+        err.response?.data?.error?.message || "Failed to create survey"
+      );
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-[80vh]">
+        <Spin size="large" />
+      </div>
+    );
+
   return (
-    <div>
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <ModernCard>
-                <div className="flex items-center space-x-3 mb-6">
-                  <MapPin className="w-5 h-5 text-white bg-blue-600 rounded-2xl p-2" />
-                  <div>
-                    <h3 className="text-xl font-bold">Survey Information</h3>
-                    <p className="text-gray-600">Basic survey details</p>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="surveyName">Survey Name *</Label>
-                    <Input
-                      id="surveyName"
-                      value={formData.surveyName}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          surveyName: e.target.value,
-                        })
-                      }
-                      placeholder="Enter survey name"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="locationType">Location Type *</Label>
-                    <Select
-                      value={formData.locationType}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          locationType: value,
-                          division: undefined,
-                          depot: undefined,
-                          busStation: undefined,
-                          busStand: undefined,
-                          locationDetails: undefined,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                        <SelectValue placeholder="Select Location Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MSRTC">MSRTC</SelectItem>
-                        <SelectItem value="mall">Mall</SelectItem>
-                        <SelectItem value="industry">Industry</SelectItem>
-                        <SelectItem value="home">Home</SelectItem>
-                        <SelectItem value="shop">Shop</SelectItem>
-                        <SelectItem value="apartment">Apartment</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {formData.locationType === "MSRTC" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Division */}
-                      <div className="space-y-2">
-                        <Label htmlFor="division">Division *</Label>
-                        <Select
-                          value={formData.division || ""}
-                          onValueChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              division: value,
-                              depot: undefined,
-                              busStation: undefined,
-                              busStand: undefined,
-                            })
-                          }
-                          disabled={!formData.locationType}
-                        >
-                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                            <SelectValue placeholder="Select Division" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {divisions.map((division) => (
-                              <SelectItem
-                                key={division.documentId}
-                                value={division.documentId}
-                              >
-                                {division.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Depot */}
-                      <div className="space-y-2">
-                        <Label htmlFor="depot">Depot Name *</Label>
-                        <Select
-                          value={formData.depot || ""}
-                          onValueChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              depot: value,
-                              busStation: undefined,
-                              busStand: undefined,
-                            })
-                          }
-                          disabled={!formData.division}
-                        >
-                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                            <SelectValue placeholder="Select Depot" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {depots.map((depot) => (
-                              <SelectItem
-                                key={depot.documentId}
-                                value={depot.documentId}
-                              >
-                                {depot.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Bus Station */}
-                      <div className="space-y-2">
-                        <Label htmlFor="busStation">Bus Station *</Label>
-                        <Select
-                          value={formData.busStation || ""}
-                          onValueChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              busStation: value,
-                              busStand: undefined,
-                            })
-                          }
-                          disabled={!formData.depot}
-                        >
-                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                            <SelectValue placeholder="Select Bus Station" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {busStations.map((station) => (
-                              <SelectItem
-                                key={station.documentId}
-                                value={station.documentId}
-                              >
-                                {station.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Bus Stand */}
-                      <div className="space-y-2">
-                        <Label htmlFor="busStand">Bus Stand *</Label>
-                        <Select
-                          value={formData.busStand || ""}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, busStand: value })
-                          }
-                          disabled={!formData.busStation}
-                        >
-                          <SelectTrigger className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl">
-                            <SelectValue placeholder="Select Bus Stand" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {busStands.map((stand) => (
-                              <SelectItem
-                                key={stand.documentId}
-                                value={stand.documentId}
-                              >
-                                {stand.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ) : formData.locationType ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="locationDetails">
-                        Location Details *
-                      </Label>
-                      <Input
-                        id="locationDetails"
-                        value={formData.locationDetails || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            locationDetails: e.target.value,
-                          })
-                        }
-                        placeholder="Enter location details (e.g., address or name)"
-                        className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl"
-                        required
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              </ModernCard>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <ModernCard>
-                <div className="flex items-center space-x-3 mb-6">
-                  <Camera className="w-5 h-5 text-white bg-purple-600 rounded-2xl p-2" />
-                  <div>
-                    <h3 className="text-xl font-bold">Survey Details</h3>
-                    <p className="text-gray-600">Camera specifications</p>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="surveyPurpose">Survey Purpose *</Label>
-                      <Select
-                        value={formData.surveyPurpose}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, surveyPurpose: value })
-                        }
-                        className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl"
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Purpose" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new-installation">
-                            New Installation
-                          </SelectItem>
-                          <SelectItem value="maintenance">
-                            Maintenance
-                          </SelectItem>
-                          <SelectItem value="upgrade">Upgrade</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="workStatus">Work Status *</Label>
-                      <Select
-                        value={formData.workStatus}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, workStatus: value })
-                        }
-                        className="h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-2xl"
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="survey-initiated">
-                            Survey Initiated
-                          </SelectItem>
-                          <SelectItem value="in-progress">
-                            In Progress
-                          </SelectItem>
-                          <SelectItem value="survey-completed">
-                            Survey Completed
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-lg font-bold">Camera Details</h4>
-                      <PillButton
-                        variant="secondary"
-                        size="sm"
-                        onClick={addCameraDetail}
-                      >
-                        <Plus className="w-4 h-4 mr-2" /> Add Camera
-                      </PillButton>
-                    </div>
-                    {formData.cameraDetails.map((camera, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="p-6 bg-white/50 border rounded-2xl"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <h5 className="font-medium">Camera {index + 1}</h5>
-                          {formData.cameraDetails.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeCameraDetail(index)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-xl"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Camera Type *</Label>
-                            <Select
-                              value={camera.type}
-                              onValueChange={(value) =>
-                                updateCameraDetail(index, "type", value)
-                              }
-                            >
-                              <SelectTrigger className="h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl">
-                                <SelectValue placeholder="Select Type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="bullet">Bullet</SelectItem>
-                                <SelectItem value="dome">Dome</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Serial Number</Label>
-                            <Input
-                              value={camera.serialNumber}
-                              onChange={(e) =>
-                                updateCameraDetail(
-                                  index,
-                                  "serialNumber",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter serial number"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Pole Location *</Label>
-                            <Input
-                              value={camera.poleLocation}
-                              onChange={(e) =>
-                                updateCameraDetail(
-                                  index,
-                                  "poleLocation",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter location"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Distance Between Cameras (meters)</Label>
-                            <Input
-                              type="number"
-                              value={camera.distanceBetweenCameras}
-                              onChange={(e) =>
-                                updateCameraDetail(
-                                  index,
-                                  "distanceBetweenCameras",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter distance"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Direction</Label>
-                            <Select
-                              value={camera.direction}
-                              onValueChange={(value) =>
-                                updateCameraDetail(index, "direction", value)
-                              }
-                            >
-                              <SelectTrigger className="h-10 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl">
-                                <SelectValue placeholder="Select Direction" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="north">North</SelectItem>
-                                <SelectItem value="south">South</SelectItem>
-                                <SelectItem value="east">East</SelectItem>
-                                <SelectItem value="west">West</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>GPS Latitude</Label>
-                            <Input
-                              type="number"
-                              value={camera.gpsLatitude}
-                              onChange={(e) =>
-                                updateCameraDetail(
-                                  index,
-                                  "gpsLatitude",
-                                  e.target.value
-                                )
-                              }
-                              placeholder={
-                                location?.lat.toString() || "Enter latitude"
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>GPS Longitude</Label>
-                            <Input
-                              type="number"
-                              value={camera.gpsLongitude}
-                              onChange={(e) =>
-                                updateCameraDetail(
-                                  index,
-                                  "gpsLongitude",
-                                  e.target.value
-                                )
-                              }
-                              placeholder={
-                                location?.lng.toString() || "Enter longitude"
-                              }
-                            />
-                          </div>
-                        </div>
-                        {location && (
-                          <div className="mt-4 p-3 bg-blue-50 rounded-xl">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <span>
-                                  Current GPS: {location.lat.toFixed(6)},{" "}
-                                  {location.lng.toFixed(6)}
-                                </span>
-                              </div>
-                              <PillButton
-                                variant="secondary"
-                                size="sm"
-                                onClick={() =>
-                                  applyCurrentLocationToCamera(index)
-                                }
-                              >
-                                Use Current Location
-                              </PillButton>
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </ModernCard>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <ModernCard>
-                <div className="flex items-center space-x-3 mb-6">
-                  <ImageIcon className="w-5 h-5 text-white bg-green-600 rounded-2xl p-2" />
-                  <div>
-                    <h3 className="text-xl font-bold">Photo Documentation</h3>
-                    <p className="text-gray-600">Upload photos</p>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="border-2 border-dashed border-amber-300 rounded-2xl p-8 text-center">
-                    <Upload className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                    <div className="space-y-2">
-                      <p className="text-lg font-medium">Upload Photos</p>
-                      <p className="text-sm text-gray-600">
-                        Drag and drop or use the button
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center space-x-4 mt-4">
-                      <Input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                        id="photo-upload"
-                      />
-                      <Label
-                        htmlFor="photo-upload"
-                        className="inline-flex items-center justify-center px-6 py-3 text-white bg-amber-500 rounded-2xl hover:bg-amber-600 cursor-pointer"
-                      >
-                        <Upload className="w-4 h-4 mr-2" /> Choose Files
-                      </Label>
-                    </div>
-                  </div>
-                  {photos.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {photos.map((photo, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(photo)}
-                            alt={photo.name}
-                            className="w-full h-32 object-cover rounded-2xl"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(index)}
-                            className="absolute top-2 right-2 bg-gray-800/50 text-white rounded-full p-1"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ModernCard>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <ModernCard>
-                <div className="flex items-center space-x-3 mb-6">
-                  <ImageIcon className="w-5 h-5 text-white bg-gray-600 rounded-2xl p-2" />
-                  <div>
-                    <h3 className="text-xl font-bold">Additional Notes</h3>
-                    <p className="text-gray-600">Add notes</p>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Input
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) =>
-                        setFormData({ ...formData, notes: e.target.value })
-                      }
-                      placeholder="Enter notes"
-                    />
-                  </div>
-                </div>
-              </ModernCard>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="flex justify-between"
-            >
-              <PillButton variant="secondary" onClick={handleSaveDraft}>
-                Save as Draft
-              </PillButton>
-              <PillButton
-                variant="primary"
-                size="lg"
-                type="submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Creating Survey..." : "Create Survey"}
-              </PillButton>
-            </motion.div>
-          </form>
+    <div className="p-8">
+      <div className="bg-white shadow-md rounded-xl p-8 border border-gray-200 max-w-5xl mx-auto">
+        <div className="flex items-center gap-2 mb-6">
+          <FileAddOutlined className="text-blue-600 text-xl" />
+          <h1 className="text-2xl font-semibold text-gray-800">New Survey</h1>
         </div>
-      </main>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            placeholder="Enter Survey Name"
+            value={surveyName}
+            onChange={(e) => setSurveyName(e.target.value)}
+            size="large"
+          />
+
+          <Select
+            placeholder="Select Survey Type"
+            value={surveyType}
+            onChange={(v) => {
+              setSurveyType(v);
+              setSelectedProject(null);
+              setSelectedSite(null);
+              setSelectedCustomer(null);
+            }}
+            size="large"
+            options={[
+              { label: "Project", value: "Project" },
+              { label: "Customer", value: "Customer" },
+            ]}
+          />
+        </div>
+
+        {surveyType === "Project" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <Select
+              showSearch
+              placeholder="Select Project"
+              value={selectedProject?.documentId}
+              onChange={(val) => {
+                const proj = projects.find((p) => p.documentId === val);
+                setSelectedProject(proj);
+              }}
+              options={projects.map((p) => ({
+                label: p.project_name,
+                value: p.documentId,
+              }))}
+              size="large"
+            />
+
+            <Select
+              showSearch
+              placeholder="Select Site"
+              value={selectedSite?.documentId}
+              onChange={(val) => {
+                const site = sites.find((s) => s.documentId === val);
+                setSelectedSite(site);
+              }}
+              options={sites.map((s) => ({
+                label: s.name,
+                value: s.documentId,
+              }))}
+              size="large"
+            />
+          </div>
+        )}
+
+        {surveyType === "Customer" && (
+          <div className="mt-4">
+            <Select
+              showSearch
+              placeholder="Search or Select Customer"
+              value={selectedCustomer?.name} // ERP customer ID
+              loading={customerLoading}
+              onSearch={(val) => debouncedSearch(val)}
+              onFocus={() => fetchCustomers("")} // initial fetch
+              onChange={(val) => {
+                const cust = customers.find((c) => c.name === val);
+                setSelectedCustomer(cust);
+              }}
+              filterOption={false}
+              options={customers.map((c) => ({
+                label: `${c.customer_name} (${c.name})`,
+                value: c.name, // ERP's unique ID
+              }))}
+              size="large"
+              notFoundContent={
+                customerLoading ? "Loading..." : "No customers found"
+              }
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <Select
+            placeholder="Select Survey Purpose"
+            value={surveyPurpose}
+            onChange={(v) => setSurveyPurpose(v)}
+            size="large"
+            options={[
+              { label: "Site Survey", value: "Site Survey" },
+              { label: "Installation Check", value: "Installation Check" },
+              { label: "Maintenance", value: "Maintenance" },
+            ]}
+          />
+
+          <Select
+            placeholder="Select Work Status"
+            value={workStatus}
+            onChange={(v) => setWorkStatus(v)}
+            size="large"
+            options={[
+              { label: "Pending", value: "Pending" },
+              { label: "In Progress", value: "In Progress" },
+              { label: "Completed", value: "Completed" },
+            ]}
+          />
+        </div>
+
+        <div className="mt-4">
+          <Upload
+            multiple
+            listType="picture"
+            beforeUpload={() => false}
+            onChange={({ fileList }) => setPhotoFiles(fileList)}
+          >
+            <Button icon={<UploadOutlined />}>Upload Photos</Button>
+          </Upload>
+        </div>
+
+        <div className="mt-4">
+          <Input.TextArea
+            placeholder="Add additional notes..."
+            rows={4}
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value)}
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <Button onClick={() => router.back()}>Cancel</Button>
+          <Button
+            type="primary"
+            className="bg-blue-600"
+            size="large"
+            loading={loading}
+            onClick={handleSubmit}
+          >
+            Submit Survey
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -41,6 +41,25 @@ interface StrapiResponse<T> {
   data: { data: T };
 }
 
+function getGreetingForIST() {
+  // Get IST time
+  const now = new Date();
+  const istTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+  const hours = istTime.getHours();
+
+  if (hours >= 5 && hours < 12) {
+    return "Good Morning";
+  } else if (hours >= 12 && hours < 17) {
+    return "Good Afternoon";
+  } else if (hours >= 17 && hours < 21) {
+    return "Good Evening";
+  } else {
+    return "Good Night";
+  }
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({
@@ -230,7 +249,7 @@ export default function Dashboard() {
             transition={{ duration: 0.5 }}
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Good morning, Survey Team! 👋
+              {getGreetingForIST()}, Purchase Team! 👋
             </h2>
             <p className="text-sm sm:text-base text-gray-600">
               Here's what's happening with your surveys today.

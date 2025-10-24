@@ -26,10 +26,15 @@ import axios from "axios";
 
 const navigation = [
   { name: "Dashboard", href: "/purchase/dashboard", icon: LayoutDashboard },
-  { name: "Surveys", href: "/purchase/surveys", icon: FileText },
+  // { name: "Surveys", href: "/purchase/surveys", icon: FileText },
   //   { name: "Cameras", href: "/technician/cameras", icon: Camera },
-  { name: "Locations", href: "/purchase/locations", icon: MapPin },
+  // { name: "Locations", href: "/purchase/locations", icon: MapPin },
   //   { name: "Map View", href: "/technician/map", icon: Map },
+  // { name: "Orders", href: "/purchase/orders", icon: ShoppingCart },
+  { name: "Projects", href: "/purchase/projects", icon: FileText },
+  { name: "Sites", href: "/purchase/sites", icon: MapPin },
+  //
+
   { name: "BOQ", href: "/purchase/boq", icon: TableProperties },
 
   { name: "Products", href: "/purchase/products", icon: BarChart3 },

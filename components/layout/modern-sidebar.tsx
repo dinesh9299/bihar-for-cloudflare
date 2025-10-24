@@ -26,17 +26,20 @@ import axios from "axios";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Surveys", href: "/surveys", icon: FileText },
-  { name: "Cameras", href: "/cameras", icon: Camera },
+  // { name: "Surveys", href: "/surveys", icon: FileText },
+  // { name: "Projects", href: "/projects", icon: FileText },
+  // { name: "Cameras", href: "/cameras", icon: Camera },
   { name: "Locations", href: "/locations", icon: MapPin },
-  { name: "Map View", href: "/map", icon: Map },
-  { name: "BOQ", href: "/test", icon: TableProperties },
-  { name: "Products", href: "/products", icon: ShoppingCart },
-
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Team", href: "/team", icon: Users },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Districts & Coordinators", href: "/districts", icon: Map },
+  // { name: "Sites", href: "/sites1", icon: TableProperties },
+  // { name: "BOQ", href: "/boqs1", icon: TableProperties },
+  // { name: "BOQ", href: "/test", icon: TableProperties },
+  // { name: "Products", href: "/products", icon: ShoppingCart },
+  // { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  // { name: "Reports", href: "/reports", icon: FileText },
+  // { name: "Team", href: "/team", icon: Users },
+  // { name: "Settings", href: "/settings", icon: Settings },
+  // { name: "Map View", href: "/map", icon: Map },
 ];
 
 interface ModernSidebarProps {
@@ -108,8 +111,10 @@ export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
               <Camera className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Trinai Survey</h1>
-              <p className="text-sm text-gray-600">Management System</p>
+              <h1 className="text-lg font-bold text-gray-900">
+                Bihar Election
+              </h1>
+              <p className="text-sm text-gray-600">MOnitoring System</p>
             </div>
           </motion.div>
         )}
@@ -134,7 +139,7 @@ export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
       </div>
 
       {/* Quick Action */}
-      {!isCollapsed && (
+      {/* {!isCollapsed && (
         <div className="p-6 border-b border-white/30">
           <Link href="/surveys/new">
             <PillButton className="w-full bg-gradient-to-r from-blue-500 to-blue-500 text-white">
@@ -143,12 +148,12 @@ export function ModernSidebar({ isOpen = false, onClose }: ModernSidebarProps) {
             </PillButton>
           </Link>
         </div>
-      )}
+      )} */}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}

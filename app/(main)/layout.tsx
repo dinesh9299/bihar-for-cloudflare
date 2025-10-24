@@ -124,7 +124,7 @@ export default function AdminLayout({
           />
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main className="bg-white flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
     </PageLayout>

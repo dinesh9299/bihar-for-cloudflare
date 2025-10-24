@@ -49,7 +49,7 @@ export default function BoqCard({
         onClick={onClick}
       >
         {/* ✅ Delete button with antd confirm */}
-        {boq.approved === false ? (
+        {boq.approved !== false ? (
           <button
             onClick={showConfirm}
             className="absolute top-3 right-3 text-red-500 hover:text-red-700"

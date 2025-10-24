@@ -577,16 +577,16 @@ export default function LocationsPage() {
     }
   }, [router, toast]);
 
-  useEffect(() => {
-    Promise.all([
-      fetchAllDivisions(),
-      fetchAllDepots(),
-      fetchAllBusStations(),
-      fetchAllBusStands(),
-    ]).catch((error) => {
-      console.error("Error fetching initial data:", error);
-    });
-  }, []);
+  // useEffect(() => {
+  //   Promise.all([
+  //     fetchAllDivisions(),
+  //     fetchAllDepots(),
+  //     fetchAllBusStations(),
+  //     fetchAllBusStands(),
+  //   ]).catch((error) => {
+  //     console.error("Error fetching initial data:", error);
+  //   });
+  // }, []);
 
   const [formData, setFormData] = useState({
     name: "",

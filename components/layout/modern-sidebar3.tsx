@@ -27,8 +27,11 @@ import axios from "axios";
 const navigation = [
   { name: "Dashboard", href: "/technician/dashboard", icon: LayoutDashboard },
   { name: "Surveys", href: "/technician/surveys", icon: FileText },
-  { name: "Cameras", href: "/technician/cameras", icon: Camera },
-  { name: "Locations", href: "/technician/locations", icon: MapPin },
+  { name: "Projects", href: "/technician/projects", icon: ShoppingCart },
+  { name: "Sites", href: "/technician/sites", icon: FileText },
+
+  // { name: "Cameras", href: "/technician/cameras", icon: Camera },
+  // { name: "Locations", href: "/technician/locations", icon: MapPin },
   { name: "Map View", href: "/technician/map", icon: Map },
   { name: "BOQ", href: "/technician/boq", icon: TableProperties },
 
@@ -150,7 +153,7 @@ export function ModernSidebar1({
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navigation.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}

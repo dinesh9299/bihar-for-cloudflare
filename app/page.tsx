@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { ModernCard } from "@/components/ui/modern-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,57 +37,112 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Step 1: Login
-      const res = await api.post("/auth/local", {
-        identifier: credentials.username,
-        password: credentials.password,
-      });
+      // STEP 1️⃣ Try Strapi default user login
+      let data = null;
+      let isAppUser = false;
 
-      const data = res.data;
+      try {
+        const res = await api.post("/auth/local", {
+          identifier: credentials.username,
+          password: credentials.password,
+        });
 
-      if (data.error) {
-        throw new Error(data.error.message || "Invalid credentials");
+        data = res.data;
+        console.log("✅ Logged in as default user:", data);
+
+        // ✅ Save JWT in localStorage (for frontend API calls)
+        localStorage.setItem("token", data.jwt);
+        localStorage.setItem(
+          "tokenExpiration",
+          (Date.now() + 24 * 60 * 60 * 1000).toString()
+        );
+      } catch (defaultErr: any) {
+        console.warn(
+          "Default user login failed, trying App User...",
+          defaultErr.message
+        );
+
+        // STEP 2️⃣ Try App User login
+        const res2 = await api.post("/app-user/login", {
+          email: credentials.username,
+          password: credentials.password,
+        });
+
+        data = res2.data;
+        isAppUser = true;
+        console.log("✅ Logged in as app user:", data);
+
+        // ✅ Save JWT in localStorage (for frontend API calls)
+        localStorage.setItem("token", data.jwt);
+        localStorage.setItem(
+          "tokenExpiration",
+          (Date.now() + 24 * 60 * 60 * 1000).toString()
+        );
       }
 
-      // Save JWT and expiration time (1 hour from now)
-      const expirationTime = Date.now() + 60 * 60 * 1000; // 1 hour in milliseconds
-      localStorage.setItem("token", data.jwt);
-      localStorage.setItem("tokenExpiration", expirationTime.toString());
+      // STEP 3️⃣ Determine role and username
+      let roleName = "";
+      let username = "";
 
-      // Step 2: Fetch full user with role
-      const userRes = await api.get("/users/me?populate=*");
-      const userData = userRes.data;
+      if (isAppUser) {
+        roleName = data.user?.role.toLowerCase() || "app-user";
+        username = data.user?.Full_Name || data.user?.email;
+      } else {
+        const userRes = await api.get("/users/me?populate=*");
+        const userData = userRes.data;
+        roleName = userData?.role?.name?.toLowerCase();
+        username = userData?.username;
+      }
 
-      const roleName = userData?.role?.name?.toLowerCase();
-      console.log("User Role:", roleName);
+      // 🚨 REMOVE THIS OLD CODE:
+      // Cookies.set("token", data.jwt, { expires: 1 });
+      // Cookies.set("role", roleName, { expires: 1 });
 
-      Cookies.set("token", data.jwt, { expires: 1 }); // expires in 1 day
-      Cookies.set("role", roleName, { expires: 1 });
+      // ✅ REPLACE WITH THIS:
+      // This tells Next.js (server) to set cookies readable by middleware
+      console.log("🟢 Role to set:", roleName);
+      const response = await fetch("/api/auth/set-cookie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: data.jwt,
+          role: roleName,
+        }),
+      });
+      const resData = await response.json();
+      console.log("🍪 Cookie API response:", resData);
 
+      // STEP 4️⃣ Success toast
       toast({
         variant: "success",
         title: "Login Successful",
-        description: `Welcome back, ${userData.username}!`,
+        description: `Welcome back, ${username}!`,
       });
 
-      // Step 3: Redirect based on role
+      // STEP 5️⃣ Redirect based on role
       if (roleName === "superadmin") {
         router.push("/dashboard");
-      } else if (roleName === "admin") {
-        router.push("/admin/dashboard");
-      } else if (roleName === "technician") {
-        router.push("/technician/dashboard");
-      } else if (roleName === "purchase") {
-        router.push("/purchase/dashboard");
+      } else if (roleName === "district coordinator") {
+        router.push("/district/locations");
+      } else if (
+        roleName.toLowerCase() === "assembly coordinator" ||
+        roleName === "app-user"
+      ) {
+        router.push("/assembly/locations");
+      } else if (roleName === "block coordinator") {
+        router.push("/block/dashboard");
+      } else if (roleName === "booth coordinator") {
+        router.push("/booth/booth");
       } else {
-        throw new Error("Unauthorized role");
+        router.push("/home"); // default route
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("❌ Login failed completely:", err);
+
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: err.message || "Something went wrong, please try again.",
+        description: err.message || "Invalid credentials or server error.",
       });
     } finally {
       setIsLoading(false);
@@ -115,13 +169,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative overflow-hidden">
-      {/* Floating Background Elements */}
+      {/* Background effects */}
       <div className="absolute top-10 sm:top-20 left-10 sm:left-20 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
       <div className="absolute top-20 sm:top-40 right-10 sm:right-20 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
       <div className="absolute -bottom-8 left-20 sm:left-40 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
 
       <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
-        {/* Left Side - Branding */}
+        {/* Left Side */}
         <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-6 lg:px-12">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -129,39 +183,37 @@ export default function LoginPage() {
             transition={{ duration: 0.8 }}
             className="max-w-lg"
           >
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="flex items-center space-x-4 mb-8">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="p-3 sm:p-4 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl sm:rounded-2xl shadow-xl"
+                className="p-4 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-2xl shadow-xl"
               >
-                <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                <Shield className="w-10 h-10 text-white" />
               </motion.div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  MSRTC CCTV
-                </h1>
-                <p className="text-base sm:text-lg text-gray-600">
+                <h1 className="text-3xl font-bold text-gray-900">MSRTC CCTV</h1>
+                <p className="text-lg text-gray-600">
                   Survey Management System
                 </p>
               </div>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
-              Advanced Site Survey
+            <h2 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
+              Advanced Site Survey{" "}
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">
                 for Bus Stop Security
               </span>
             </h2>
 
-            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
+            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
               Streamline your CCTV installation process with our comprehensive
               survey management platform. Track locations, manage teams, and
               ensure optimal camera placement across all MSRTC facilities.
             </p>
 
-            <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+            <div className="space-y-4 mb-8">
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
@@ -169,16 +221,16 @@ export default function LoginPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
                 >
-                  <ModernCard className="p-3 sm:p-4" hover={false}>
-                    <div className="flex items-center space-x-3 sm:space-x-4">
+                  <ModernCard className="p-4" hover={false}>
+                    <div className="flex items-center space-x-4">
                       <div className="p-2 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl text-amber-600">
                         {feature.icon}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
+                        <h3 className="font-semibold text-gray-900 text-base">
                           {feature.title}
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-600">
+                        <p className="text-sm text-gray-600">
                           {feature.description}
                         </p>
                       </div>
@@ -188,17 +240,17 @@ export default function LoginPage() {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-500" />
                 <span>Secure & Encrypted</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-500" />
                 <span>Real-time Sync</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-500" />
                 <span>Mobile Ready</span>
               </div>
             </div>
@@ -206,24 +258,24 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="w-full max-w-md"
           >
-            <ModernCard className="shadow-2xl p-4 sm:p-6" padding="xl">
-              <div className="text-center mb-6 sm:mb-8">
+            <ModernCard className="shadow-2xl p-6" padding="xl">
+              <div className="text-center mb-8">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.5, delay: 0.4 }}
-                  className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg"
+                  className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-3xl flex items-center justify-center mb-6 shadow-lg"
                 >
-                  <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  <Lock className="w-8 h-8 text-white" />
                 </motion.div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
                   Welcome Back
                 </h2>
                 <p className="text-sm text-gray-600">
@@ -231,14 +283,9 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
+              <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="username"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Username
-                  </Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
                     type="text"
@@ -250,18 +297,12 @@ export default function LoginPage() {
                         username: e.target.value,
                       })
                     }
-                    className="h-10 sm:h-12 bg-white/50 backdrop-blur-sm border-white/30 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl sm:rounded-2xl text-sm sm:text-base"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Password
-                  </Label>
+                  <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -274,18 +315,18 @@ export default function LoginPage() {
                           password: e.target.value,
                         })
                       }
-                      className="h-10 sm:h-12 bg-white/50 backdrop-blur-sm border-white/30 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl sm:rounded-2xl pr-12 text-sm sm:text-base"
                       required
+                      className="pr-12"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
                       {showPassword ? (
-                        <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <EyeOff className="w-5 h-5" />
                       ) : (
-                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Eye className="w-5 h-5" />
                       )}
                     </button>
                   </div>
@@ -294,44 +335,43 @@ export default function LoginPage() {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.1 }}
                 >
                   <button
                     type="submit"
-                    className="w-full h-10 sm:h-12 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-white font-medium rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base"
+                    className="w-full h-12 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-white font-medium rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         <span>Signing In...</span>
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2">
                         <span>Sign In</span>
-                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <ArrowRight className="w-5 h-5" />
                       </div>
                     )}
                   </button>
                 </motion.div>
               </form>
 
-              <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200/50">
-                <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs sm:text-sm">
+              <div className="mt-8 pt-6 border-t border-gray-200/50">
+                <div className="flex justify-center gap-4 text-sm">
                   <div className="flex items-center space-x-2 text-green-600">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     <span>System Online</span>
                   </div>
                   <div className="w-px h-4 bg-gray-300" />
                   <div className="flex items-center space-x-2 text-amber-600">
-                    <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <Zap className="w-4 h-4" />
                     <span>GPS Ready</span>
                   </div>
                 </div>
               </div>
             </ModernCard>
 
-            <div className="mt-4 sm:mt-6 text-center">
+            <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
                 Protected by enterprise-grade security • Version 2.0
               </p>
