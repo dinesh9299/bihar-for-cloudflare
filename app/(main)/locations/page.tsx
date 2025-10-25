@@ -200,9 +200,10 @@ export default function UploadAssembliesAndLocationsPage() {
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
         const assemblyNo = r["LAC No."]?.toString().trim();
-        const assemblyName = r["LAC Name"]?.trim();
-        const districtName = r["Election District"]?.trim();
-        const state = r["State"]?.trim();
+        const assemblyName = r["ASMBLY_NAME"]?.trim();
+        const districtName = r["DISTRICT_NAME"]?.trim();
+        const state = r["STATE_NAME"]?.trim();
+        const Phase = r["PHASE"]?.trim();
 
         if (!assemblyName || !assemblyNo || !districtName) continue;
 
@@ -213,6 +214,7 @@ export default function UploadAssembliesAndLocationsPage() {
             data: {
               district_name: districtName,
               state: state || null,
+              Phase: Phase,
               // later you can add "district_coordinator" here if you know the user id
             },
           });
@@ -375,7 +377,7 @@ export default function UploadAssembliesAndLocationsPage() {
     <div className="min-h-screen bg-gray-50 ">
       <div className=" w-full mx-auto bg-white shadow-lg rounded-2xl p-8 space-y-10">
         {/* 🟪 Assemblies Upload Section */}
-        {/* <div>
+        <div>
           <div className="flex items-center space-x-3 mb-4">
             <FileSpreadsheet className="w-6 h-6 text-indigo-500" />
             <h2 className="text-xl font-semibold text-gray-800">
@@ -396,12 +398,12 @@ export default function UploadAssembliesAndLocationsPage() {
               {isUploading ? "Uploading..." : "Upload Assemblies"}
             </Button>
           </div>
-        </div> */}
+        </div>
 
         {/* <hr className="my-6" /> */}
 
         {/* 🟩 Locations Upload Section */}
-        {/* <div>
+        <div>
           <div className="flex items-center space-x-3 mb-4">
             <FileSpreadsheet className="w-6 h-6 text-amber-500" />
             <h2 className="text-xl font-semibold text-gray-800">
@@ -422,7 +424,7 @@ export default function UploadAssembliesAndLocationsPage() {
               {isUploading ? "Uploading..." : "Upload Locations"}
             </Button>
           </div>
-        </div> */}
+        </div>
 
         {/* Progress Bar */}
         {isUploading && (
@@ -437,7 +439,7 @@ export default function UploadAssembliesAndLocationsPage() {
         {/* 🔍 Filter and List */}
         {/* 🔍 Filter and List */}
         <div className="mt-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="lg:flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
               Uploaded Locations
             </h2>

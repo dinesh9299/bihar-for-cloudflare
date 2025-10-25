@@ -171,115 +171,162 @@ export default function AddAssemblyCoordinatorPage() {
           Add Assembly Coordinator
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Input
-            placeholder="Full Name"
-            value={form.Full_Name}
-            onChange={(e) => setForm({ ...form, Full_Name: e.target.value })}
-          />
-          <Input
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <Input.Password
-            placeholder="Password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-          />
-          <Input
-            placeholder="Phone Number"
-            value={form.phone_Number}
-            onChange={(e) => setForm({ ...form, phone_Number: e.target.value })}
-          />
-          <Input
-            placeholder="Aadhar"
-            value={form.Aadhar}
-            onChange={(e) => setForm({ ...form, Aadhar: e.target.value })}
-          />
-          <Input
-            placeholder="Father's Name"
-            value={form.Father_Name}
-            onChange={(e) => setForm({ ...form, Father_Name: e.target.value })}
-          />
-          <Input
-            placeholder="Mother's Name"
-            value={form.Mother_Name}
-            onChange={(e) => setForm({ ...form, Mother_Name: e.target.value })}
-          />
-          <Input
-            placeholder="Bank / UPI ID"
-            value={form.Bank_or_UPI}
-            onChange={(e) => setForm({ ...form, Bank_or_UPI: e.target.value })}
-          />
-          <Input
-            placeholder="Village"
-            value={form.Village}
-            onChange={(e) => setForm({ ...form, Village: e.target.value })}
-          />
-          <Input
-            placeholder="Pincode"
-            value={form.Pincode}
-            onChange={(e) => setForm({ ...form, Pincode: e.target.value })}
-          />
-          <Input
-            placeholder="State"
-            value={form.State}
-            onChange={(e) => setForm({ ...form, State: e.target.value })}
-          />
-
-          {/* 🏛️ Select District */}
-          <Select
-            placeholder="Select District"
-            value={form.District || undefined}
-            onChange={(value) => {
-              setForm({ ...form, District: value, Assembly: "" });
-              fetchAssemblies(value);
-            }}
-          >
-            {districts.map((d) => (
-              <Option key={d.documentId} value={d.documentId}>
-                {d.district_name}
-              </Option>
-            ))}
-          </Select>
-
-          {/* 🗳️ Select Assembly */}
-          <Select
-            placeholder="Select Assembly"
-            value={form.Assembly || undefined}
-            onChange={(value) => setForm({ ...form, Assembly: value })}
-            disabled={!form.District}
-          >
-            {assemblies.map((a) => (
-              <Option key={a.documentId} value={a.documentId}>
-                {a.Assembly_Name}
-              </Option>
-            ))}
-          </Select>
-
-          {/* 📸 Photo Upload */}
-          <Upload
-            beforeUpload={(file) => {
-              setForm({ ...form, Photo: file });
-              return false;
-            }}
-            maxCount={1}
-            accept="image/*"
-          >
-            <Button className="bg-green-500 text-white hover:bg-green-600">
-              <UploadOutlined /> Upload Photo
-            </Button>
-          </Upload>
-
-          {/* 🏠 Address */}
-          <div className="col-span-2">
-            <Input.TextArea
-              placeholder="Address"
-              rows={3}
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
+        <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            {/* 👤 Full Name */}
+            <Input
+              placeholder="Full Name"
+              value={form.Full_Name}
+              onChange={(e) => setForm({ ...form, Full_Name: e.target.value })}
+              className="w-full"
             />
+
+            {/* 📧 Email */}
+            <Input
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="w-full"
+            />
+
+            {/* 🔑 Password */}
+            <Input.Password
+              placeholder="Password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="w-full"
+            />
+
+            {/* 📞 Phone Number */}
+            <Input
+              placeholder="Phone Number"
+              value={form.phone_Number}
+              onChange={(e) =>
+                setForm({ ...form, phone_Number: e.target.value })
+              }
+              className="w-full"
+            />
+
+            {/* 🆔 Aadhar */}
+            <Input
+              placeholder="Aadhar"
+              value={form.Aadhar}
+              onChange={(e) => setForm({ ...form, Aadhar: e.target.value })}
+              className="w-full"
+            />
+
+            {/* 👨‍👦 Father’s Name */}
+            <Input
+              placeholder="Father's Name"
+              value={form.Father_Name}
+              onChange={(e) =>
+                setForm({ ...form, Father_Name: e.target.value })
+              }
+              className="w-full"
+            />
+
+            {/* 👩‍👦 Mother’s Name */}
+            <Input
+              placeholder="Mother's Name"
+              value={form.Mother_Name}
+              onChange={(e) =>
+                setForm({ ...form, Mother_Name: e.target.value })
+              }
+              className="w-full"
+            />
+
+            {/* 🏦 Bank or UPI ID */}
+            <Input
+              placeholder="Bank / UPI ID"
+              value={form.Bank_or_UPI}
+              onChange={(e) =>
+                setForm({ ...form, Bank_or_UPI: e.target.value })
+              }
+              className="w-full"
+            />
+
+            {/* 🏡 Village */}
+            <Input
+              placeholder="Village"
+              value={form.Village}
+              onChange={(e) => setForm({ ...form, Village: e.target.value })}
+              className="w-full"
+            />
+
+            {/* 📮 Pincode */}
+            <Input
+              placeholder="Pincode"
+              value={form.Pincode}
+              onChange={(e) => setForm({ ...form, Pincode: e.target.value })}
+              className="w-full"
+            />
+
+            {/* 🌎 State */}
+            <Input
+              placeholder="State"
+              value={form.State}
+              onChange={(e) => setForm({ ...form, State: e.target.value })}
+              className="w-full"
+            />
+
+            {/* 🏛️ Select District */}
+            <Select
+              placeholder="Select District"
+              value={form.District || undefined}
+              onChange={(value) => {
+                setForm({ ...form, District: value, Assembly: "" });
+                fetchAssemblies(value);
+              }}
+              className="w-full"
+            >
+              {districts.map((d) => (
+                <Option key={d.documentId} value={d.documentId}>
+                  {d.district_name}
+                </Option>
+              ))}
+            </Select>
+
+            {/* 🗳️ Select Assembly */}
+            <Select
+              placeholder="Select Assembly"
+              value={form.Assembly || undefined}
+              onChange={(value) => setForm({ ...form, Assembly: value })}
+              disabled={!form.District}
+              className="w-full"
+            >
+              {assemblies.map((a) => (
+                <Option key={a.documentId} value={a.documentId}>
+                  {a.Assembly_Name}
+                </Option>
+              ))}
+            </Select>
+
+            {/* 📸 Photo Upload */}
+            <div className="flex flex-col gap-2">
+              <Upload
+                beforeUpload={(file) => {
+                  setForm({ ...form, Photo: file });
+                  return false;
+                }}
+                maxCount={1}
+                accept="image/*"
+              >
+                <Button className="w-full bg-green-500 text-white hover:bg-green-600">
+                  <UploadOutlined /> Upload Photo
+                </Button>
+              </Upload>
+            </div>
+
+            {/* 🏠 Address (Full Width) */}
+            <div className="col-span-1 md:col-span-2">
+              <Input.TextArea
+                placeholder="Address"
+                rows={3}
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                className="w-full"
+              />
+            </div>
           </div>
         </div>
 

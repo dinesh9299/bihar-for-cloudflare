@@ -123,16 +123,16 @@ export default function LoginPage() {
       if (roleName === "superadmin") {
         router.push("/dashboard");
       } else if (roleName === "district coordinator") {
-        router.push("/district/locations");
+        router.push("/district/dashboard");
       } else if (
         roleName.toLowerCase() === "assembly coordinator" ||
         roleName === "app-user"
       ) {
-        router.push("/assembly/locations");
+        router.push("/assembly/dashboard");
       } else if (roleName === "block coordinator") {
         router.push("/block/dashboard");
       } else if (roleName === "booth coordinator") {
-        router.push("/booth/booth");
+        router.push("/booth/locations");
       } else {
         router.push("/home"); // default route
       }
@@ -152,27 +152,27 @@ export default function LoginPage() {
   const features = [
     {
       icon: <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />,
-      title: "GPS Tracking",
-      description: "Real-time location tracking",
+      title: "Location Management",
+      description: "Manage polling booth locations",
     },
     {
       icon: <Camera className="w-4 h-4 sm:w-5 sm:h-5" />,
-      title: "Smart Surveys",
-      description: "Intelligent survey forms",
+      title: "Voter Monitoring",
+      description: "Real-time election monitoring",
     },
     {
       icon: <Users className="w-4 h-4 sm:w-5 sm:h-5" />,
-      title: "Team Collaboration",
-      description: "Multi-user access control",
+      title: "Team Coordination",
+      description: "Coordinate election observers",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-green-50 relative overflow-hidden">
       {/* Background effects */}
-      <div className="absolute top-10 sm:top-20 left-10 sm:left-20 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
-      <div className="absolute top-20 sm:top-40 right-10 sm:right-20 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
-      <div className="absolute -bottom-8 left-20 sm:left-40 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+      <div className="absolute top-10 sm:top-20 left-10 sm:left-20 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-blue-200/30 to-green-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+      <div className="absolute top-20 sm:top-40 right-10 sm:right-20 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-green-200/30 to-blue-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+      <div className="absolute -bottom-8 left-20 sm:left-40 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-br from-blue-200/30 to-green-200/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
 
       <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
         {/* Left Side */}
@@ -188,29 +188,29 @@ export default function LoginPage() {
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="p-4 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-2xl shadow-xl"
+                className="p-4 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl shadow-xl"
               >
                 <Shield className="w-10 h-10 text-white" />
               </motion.div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">MSRTC CCTV</h1>
-                <p className="text-lg text-gray-600">
-                  Survey Management System
-                </p>
+                <h1 className="text-3xl font-bold text-black">
+                  Bihar Election
+                </h1>
+                <p className="text-lg text-black">Monitoring System</p>
               </div>
             </div>
 
-            <h2 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
-              Advanced Site Survey{" "}
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">
-                for Bus Stop Security
+            <h2 className="text-4xl font-bold text-black mb-6 leading-tight">
+              Comprehensive Election{" "}
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600">
+                Monitoring Platform
               </span>
             </h2>
 
-            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              Streamline your CCTV installation process with our comprehensive
-              survey management platform. Track locations, manage teams, and
-              ensure optimal camera placement across all MSRTC facilities.
+            <p className="text-lg text-black mb-8 leading-relaxed">
+              Streamline your election management process with our comprehensive
+              monitoring platform. Track locations, manage teams, and ensure
+              smooth conduct of elections across all polling booths in Bihar.
             </p>
 
             <div className="space-y-4 mb-8">
@@ -223,14 +223,14 @@ export default function LoginPage() {
                 >
                   <ModernCard className="p-4" hover={false}>
                     <div className="flex items-center space-x-4">
-                      <div className="p-2 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl text-amber-600">
+                      <div className="p-2 bg-gradient-to-br from-blue-100 to-green-100 rounded-xl text-blue-600">
                         {feature.icon}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-base">
+                        <h3 className="font-semibold text-black text-base">
                           {feature.title}
                         </h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-black">
                           {feature.description}
                         </p>
                       </div>
@@ -240,17 +240,17 @@ export default function LoginPage() {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+            <div className="flex flex-wrap gap-4 text-sm text-black">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-600" />
                 <span>Secure & Encrypted</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-600" />
                 <span>Real-time Sync</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-600" />
                 <span>Mobile Ready</span>
               </div>
             </div>
@@ -271,21 +271,23 @@ export default function LoginPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.5, delay: 0.4 }}
-                  className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-3xl flex items-center justify-center mb-6 shadow-lg"
+                  className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-3xl flex items-center justify-center mb-6 shadow-lg"
                 >
                   <Lock className="w-8 h-8 text-white" />
                 </motion.div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-3xl font-bold text-black mb-2">
                   Welcome Back
                 </h2>
-                <p className="text-sm text-gray-600">
-                  Sign in to access your survey dashboard
+                <p className="text-sm text-black">
+                  Sign in to access your monitoring dashboard
                 </p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username" className="text-black">
+                    Username
+                  </Label>
                   <Input
                     id="username"
                     type="text"
@@ -298,11 +300,14 @@ export default function LoginPage() {
                       })
                     }
                     required
+                    className="text-black"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-black">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -316,12 +321,12 @@ export default function LoginPage() {
                         })
                       }
                       required
-                      className="pr-12"
+                      className="pr-12 text-black"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-black hover:text-black/70"
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -338,7 +343,7 @@ export default function LoginPage() {
                 >
                   <button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-white font-medium rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -356,23 +361,23 @@ export default function LoginPage() {
                 </motion.div>
               </form>
 
-              <div className="mt-8 pt-6 border-t border-gray-200/50">
+              <div className="mt-8 pt-6 border-t border-black/10">
                 <div className="flex justify-center gap-4 text-sm">
                   <div className="flex items-center space-x-2 text-green-600">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     <span>System Online</span>
                   </div>
-                  <div className="w-px h-4 bg-gray-300" />
-                  <div className="flex items-center space-x-2 text-amber-600">
+                  <div className="w-px h-4 bg-black/20" />
+                  <div className="flex items-center space-x-2 text-blue-600">
                     <Zap className="w-4 h-4" />
-                    <span>GPS Ready</span>
+                    <span>Monitoring Active</span>
                   </div>
                 </div>
               </div>
             </ModernCard>
 
             <div className="mt-6 text-center">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-black">
                 Protected by enterprise-grade security • Version 2.0
               </p>
             </div>

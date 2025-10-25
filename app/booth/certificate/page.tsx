@@ -296,7 +296,7 @@ export default function LoggedInUserCertificate() {
         {/* Upload Section */}
         <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
           <h4 className="text-lg font-semibold mb-4 text-gray-800">
-            Upload Police Verified Certificate
+            Upload Verified Certificate
           </h4>
 
           <Upload

@@ -30,13 +30,13 @@ const navigation = [
   // { name: "Projects", href: "/projects", icon: FileText },
   // { name: "Cameras", href: "/cameras", icon: Camera },
   { name: "Locations", href: "/assembly/locations", icon: MapPin },
-  { name: "me", href: "/assembly/me", icon: Users },
   { name: "Certificate", href: "/assembly/certificate", icon: FileText },
   // { name: "Districts", href: "/districts", icon: Map },
   { name: "Blocks", href: "/assembly/blocks", icon: TableProperties },
   { name: "Coordinators", href: "/assembly/coordinators", icon: Users },
   { name: "Materials", href: "/assembly/material", icon: BarChart3 },
   { name: "Dispatch", href: "/assembly/dispatch", icon: FileText },
+  { name: "Account", href: "/assembly/me", icon: Users },
 
   // { name: "Sites", href: "/sites1", icon: TableProperties },
   // { name: "BOQ", href: "/boqs1", icon: TableProperties },
@@ -121,8 +121,10 @@ export function Assemblysidebar({
               <Camera className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Trinai Survey</h1>
-              <p className="text-sm text-gray-600">Management System</p>
+              <h1 className="text-lg font-bold text-gray-900">
+                Bihar Election
+              </h1>
+              <p className="text-sm text-gray-600">Monitoring System</p>
             </div>
           </motion.div>
         )}
@@ -147,16 +149,6 @@ export function Assemblysidebar({
       </div>
 
       {/* Quick Action */}
-      {!isCollapsed && (
-        <div className="p-6 border-b border-white/30">
-          <Link href="/surveys/new">
-            <PillButton className="w-full bg-gradient-to-r from-blue-500 to-blue-500 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              New Survey
-            </PillButton>
-          </Link>
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">

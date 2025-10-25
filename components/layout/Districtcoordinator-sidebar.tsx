@@ -116,8 +116,10 @@ export function District_coordinator_sidebar({
               <Camera className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Trinai Survey</h1>
-              <p className="text-sm text-gray-600">Management System</p>
+              <h1 className="text-lg font-bold text-gray-900">
+                Bihar Election
+              </h1>
+              <p className="text-sm text-gray-600">Monitoring System</p>
             </div>
           </motion.div>
         )}

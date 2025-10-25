@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import bpi from "@/lib/bpi";
 
 const Page = () => {
   const [user, setUser] = useState<any>(null);
@@ -9,6 +10,8 @@ const Page = () => {
   const [locations, setLocations] = useState<any[]>([]);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
+
+  const baseurl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,12 +24,9 @@ const Page = () => {
         }
 
         // 1️⃣ Fetch the logged-in user
-        const userRes = await axios.get(
-          "http://183.82.117.36:1339/api/app-user/me?populate=*",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const userRes = await axios.get(`${baseurl}/app-user/me?populate=*`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const currentUser = userRes.data.user;
         setUser(currentUser);
@@ -43,8 +43,8 @@ const Page = () => {
         console.log("🟢 Logged-in user's Assembly_No:", userAssemblyNo);
 
         // 3️⃣ Fetch all assemblies with locations populated
-        const assembliesRes = await axios.get(
-          "http://183.82.117.36:1339/api/assemblies?pagination[pageSize]=1000&populate=*"
+        const assembliesRes = await bpi.get(
+          "/assemblies?pagination[pageSize]=1000&populate=*"
         );
 
         const allAssemblies = assembliesRes.data.data || [];

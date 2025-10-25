@@ -30,8 +30,9 @@ const navigation = [
   // { name: "Projects", href: "/projects", icon: FileText },
   // { name: "Cameras", href: "/cameras", icon: Camera },
   { name: "Locations", href: "/booth/locations", icon: MapPin },
-  { name: "me", href: "/booth/me", icon: Users },
   { name: "Certificate", href: "/booth/certificate", icon: FileText },
+  { name: "Account", href: "/booth/me", icon: Users },
+
   //   { name: "Districts", href: "/districts", icon: Map },
   //   { name: "Blocks", href: "/assembly/blocks", icon: TableProperties },
   //   { name: "Coordinators", href: "/block/coordinators", icon: Users },
@@ -115,8 +116,10 @@ export function Boothsidebar({ isOpen = false, onClose }: ModernSidebarProps) {
               <Camera className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Trinai Survey</h1>
-              <p className="text-sm text-gray-600">Management System</p>
+              <h1 className="text-lg font-bold text-gray-900">
+                Bihar Election
+              </h1>
+              <p className="text-sm text-gray-600">Monitoring System</p>
             </div>
           </motion.div>
         )}
@@ -141,16 +144,6 @@ export function Boothsidebar({ isOpen = false, onClose }: ModernSidebarProps) {
       </div>
 
       {/* Quick Action */}
-      {!isCollapsed && (
-        <div className="p-6 border-b border-white/30">
-          <Link href="/surveys/new">
-            <PillButton className="w-full bg-gradient-to-r from-blue-500 to-blue-500 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              New Survey
-            </PillButton>
-          </Link>
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">

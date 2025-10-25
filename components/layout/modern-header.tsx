@@ -70,7 +70,7 @@ export function ModernHeader({
                   {new Date(n.createdAt).toLocaleTimeString()}
                 </span>
               </div>
-              {!n.read && (
+              {/* {!n.read && (
                 <button
                   onClick={async () => {
                     await api.put(`/notifications/${n.id}`, {
@@ -86,7 +86,7 @@ export function ModernHeader({
                 >
                   Seen
                 </button>
-              )}
+              )} */}
             </div>
           ))
         ) : (
@@ -96,7 +96,7 @@ export function ModernHeader({
         )}
       </div>
 
-      {notifications.length > 0 && (
+      {/* {notifications.length > 0 && (
         <div className="px-3 py-2 bg-gray-100 flex justify-end">
           <button
             onClick={async () => {
@@ -116,64 +116,64 @@ export function ModernHeader({
             Clear All
           </button>
         </div>
-      )}
+      )} */}
     </div>
   );
 
-  const getNotifications = async () => {
-    try {
-      const res = await api.get(
-        "/notifications?populate=users_permissions_user&sort=createdAt:desc&pagination[pageSize]=5"
-      );
-      if (user?.id) {
-        const filteredNotifications = res.data.data.filter(
-          (notification: any) =>
-            notification.users_permissions_user.id === user.id
-        );
-        setNotifications(filteredNotifications);
-      } else {
-        setNotifications(res.data.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-    }
-  };
+  // const getNotifications = async () => {
+  //   try {
+  //     const res = await api.get(
+  //       "/notifications?populate=users_permissions_user&sort=createdAt:desc&pagination[pageSize]=5"
+  //     );
+  //     if (user?.id) {
+  //       const filteredNotifications = res.data.data.filter(
+  //         (notification: any) =>
+  //           notification.users_permissions_user.id === user.id
+  //       );
+  //       setNotifications(filteredNotifications);
+  //     } else {
+  //       setNotifications(res.data.data);
+  //     }
+  //   } catch (err) {
+  //     console.error("Failed to fetch notifications:", err);
+  //   }
+  // };
 
   // useEffect(() => {
   //   getUser();
   // }, []);
 
-  useEffect(() => {
-    getNotifications();
+  // useEffect(() => {
+  // getNotifications();
 
-    const socket = io(
-      process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
-        "http://192.168.1.137:1337",
-      {
-        transports: ["websocket"],
-      }
-    );
+  // const socket = io(
+  //   process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+  //     "http://192.168.1.137:1337",
+  //   {
+  //     transports: ["websocket"],
+  //   }
+  // );
 
-    socket.on("new_boq", (data) => {
-      console.log("🔔 Live notification:", data);
-      if (user?.id && data.users_permissions_user?.id === user.id) {
-        setNotifications((prev) => [
-          {
-            id: Date.now(),
-            message: data.message,
-            createdAt: new Date().toISOString(),
-            users_permissions_user: data.users_permissions_user,
-            read: false,
-          },
-          ...prev,
-        ]);
-      }
-    });
+  //   socket.on("new_boq", (data) => {
+  //     console.log("🔔 Live notification:", data);
+  //     if (user?.id && data.users_permissions_user?.id === user.id) {
+  //       setNotifications((prev) => [
+  //         {
+  //           id: Date.now(),
+  //           message: data.message,
+  //           createdAt: new Date().toISOString(),
+  //           users_permissions_user: data.users_permissions_user,
+  //           read: false,
+  //         },
+  //         ...prev,
+  //       ]);
+  //     }
+  //   });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [user]);
+  //   return () => {
+  //     socket.disconnect();
+  //   };
+  // }, [user]);
 
   const logout = useLogout();
 

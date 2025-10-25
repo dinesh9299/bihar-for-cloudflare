@@ -65,6 +65,11 @@ export default function AssemblyCoordinatorsPage() {
           District: attrs.District ?? "",
           Assembly: attrs.Assembly ?? "",
           Photo: attrs.Photo ?? [],
+          Father_Name: attrs.Father_Name ?? "",
+          Mother_Name: attrs.Mother_Name ?? "",
+          Village: attrs.Village ?? "",
+          Aadhar: attrs.Aadhar ?? "",
+          address: attrs.address ?? "",
           // include uploaded files so modal can show them
           verified_certificate:
             attrs.verified_certificate ??
@@ -120,6 +125,8 @@ export default function AssemblyCoordinatorsPage() {
     }
   }, [user]);
 
+  console.log("selectedRecord:", selectedRecord);
+
   useEffect(() => {
     console.log("selectedRecord changed:", selectedRecord);
     let mounted = true;
@@ -166,6 +173,9 @@ export default function AssemblyCoordinatorsPage() {
         message.error("Certificate not found.");
         return;
       }
+
+      pdfElement.scrollIntoView({ behavior: "instant", block: "start" });
+      await new Promise((r) => setTimeout(r, 300)); // wait for scroll/paint
 
       const canvas = await html2canvas(pdfElement, {
         scale: 2,
@@ -271,12 +281,14 @@ export default function AssemblyCoordinatorsPage() {
             <Spin size="large" />
           </div>
         ) : (
-          <Table
-            dataSource={data}
-            columns={columns}
-            rowKey="documentId"
-            pagination={{ pageSize: 5 }}
-          />
+          <div className="w-full overflow-x-auto">
+            <Table
+              dataSource={data}
+              columns={columns}
+              rowKey="documentId"
+              pagination={{ pageSize: 5 }}
+            />
+          </div>
         )}
       </div>
 
@@ -329,75 +341,77 @@ export default function AssemblyCoordinatorsPage() {
                 <p>
                   <b>Email:</b> {selectedRecord.email}
                 </p>
-                <p>
-                  <b>Aadhaar Verified:</b>{" "}
-                  {selectedRecord.aadhar_verified ? (
-                    <span className="text-green-600 font-semibold">Yes ✅</span>
-                  ) : (
-                    <span className="text-red-500 font-semibold">No ❌</span>
-                  )}
-                </p>
               </div>
             </div>
 
             {/* Certificate Preview */}
-            <div
-              id={`pdf-${selectedRecord.documentId}`}
-              className="border rounded-xl bg-white text-black shadow-md p-6 w-full"
-            >
-              <h2 className="text-center text-xl font-bold mb-3 underline">
-                DECLARATION BY WEB CASTING AGENTS
-              </h2>
+            <div className="w-full overflow-y-auto">
+              <div
+                id={`pdf-${selectedRecord.documentId}`}
+                className="border rounded-xl bg-white text-black shadow-md p-6 mx-auto"
+                style={{
+                  width: "794px", // A4 width in px at 96 DPI
+                  minHeight: "1123px", // A4 height in px
+                  backgroundColor: "#fff",
+                }}
+              >
+                <h2 className="text-center text-xl font-bold mb-3 underline">
+                  DECLARATION BY WEB CASTING AGENTS
+                </h2>
 
-              <p className="text-center mb-4">
-                I, <b>{selectedRecord.Full_Name}</b>, S/o / D/o{" "}
-                <b>{selectedRecord.Father_Name}</b> do hereby make a solemn
-                declaration in connection with the General Election to Lok Sabha
-                2024, Assam, that:
-              </p>
-
-              <div className="mb-4 text-left pl-4">
-                <p>A. I am not a close relative of any contesting candidate.</p>
-                <p>
-                  B. No criminal case is pending against me in any court of law.
+                <p className="text-center mb-4">
+                  I, <b>{selectedRecord.Full_Name}</b>, S/o / D/o{" "}
+                  <b>{selectedRecord.Father_Name}</b> do hereby make a solemn
+                  declaration in connection with the General Election to Lok
+                  Sabha 2024, Assam, that:
                 </p>
-              </div>
 
-              <div className="flex justify-between items-start mt-6 gap-4">
-                <div className="w-[180px] h-[180px] border border-gray-400 flex justify-center items-center overflow-hidden">
-                  {selectedRecord.base64Photo ? (
-                    <img
-                      src={selectedRecord.base64Photo}
-                      alt="Profile"
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <span>No Photo</span>
-                  )}
+                <div className="mb-4 text-left pl-4">
+                  <p>
+                    A. I am not a close relative of any contesting candidate.
+                  </p>
+                  <p>
+                    B. No criminal case is pending against me in any court of
+                    law.
+                  </p>
                 </div>
 
-                <div className="flex-1 text-sm leading-6">
-                  <p>
-                    <b>Name:</b> {selectedRecord.Full_Name}
-                  </p>
-                  <p>
-                    <b>Father’s Name:</b> {selectedRecord.Father_Name}
-                  </p>
-                  <p>
-                    <b>District:</b> {selectedRecord.District}
-                  </p>
-                  <p>
-                    <b>Mobile:</b> {selectedRecord.Phone_Number}
-                  </p>
-                  <p>
-                    <b>Aadhar:</b> {selectedRecord.Aadhar}
-                  </p>
-                  <p>
-                    <b>Address:</b> {selectedRecord.address}
-                  </p>
+                <div className="flex justify-between items-start mt-6 gap-4">
+                  <div className="w-[180px] h-[180px] border border-gray-400 flex justify-center items-center overflow-hidden">
+                    {selectedRecord.base64Photo ? (
+                      <img
+                        src={selectedRecord.base64Photo}
+                        alt="Profile"
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <span>No Photo</span>
+                    )}
+                  </div>
 
-                  <div className="mt-4">
-                    <p>Signature With Date: ______________________</p>
+                  <div className="flex-1 text-sm leading-6">
+                    <p>
+                      <b>Name:</b> {selectedRecord.Full_Name}
+                    </p>
+                    <p>
+                      <b>Father’s Name:</b> {selectedRecord.Father_Name}
+                    </p>
+                    <p>
+                      <b>District:</b> {selectedRecord.District}
+                    </p>
+                    <p>
+                      <b>Mobile:</b> {selectedRecord.Phone_Number}
+                    </p>
+                    <p>
+                      <b>Aadhar:</b> {selectedRecord.Aadhar}
+                    </p>
+                    <p>
+                      <b>Address:</b> {selectedRecord.address}
+                    </p>
+
+                    <div className="mt-4">
+                      <p>Signature With Date: ______________________</p>
+                    </div>
                   </div>
                 </div>
               </div>

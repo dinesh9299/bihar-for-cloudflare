@@ -267,27 +267,30 @@ export default function DistrictCoordinatorDashboardPage() {
           <h2 className="text-lg font-semibold mb-4 text-gray-700">
             Assemblies Summary
           </h2>
-          <Table
-            dataSource={assemblies}
-            pagination={false}
-            rowKey="id"
-            columns={[
-              { title: "Assembly Name", dataIndex: "Assembly_Name" },
-              { title: "Assembly No", dataIndex: "Assembly_No" },
-              { title: "Total Locations", dataIndex: "locations" },
-              { title: "Raised Surveys", dataIndex: "raisedSurveys" },
-              { title: "Raised BOQs", dataIndex: "raisedBoqs" },
-              {
-                title: "IN Cameras (Installed / Total)",
-                render: (r) => `${r.installedInCameras} / ${r.totalInCameras}`,
-              },
-              {
-                title: "OUT Cameras (Installed / Total)",
-                render: (r) =>
-                  `${r.installedOutCameras} / ${r.totalOutCameras}`,
-              },
-            ]}
-          />
+          <div className=" w-full overflow-x-auto">
+            <Table
+              dataSource={assemblies}
+              pagination={false}
+              rowKey="id"
+              columns={[
+                { title: "Assembly Name", dataIndex: "Assembly_Name" },
+                { title: "Assembly No", dataIndex: "Assembly_No" },
+                { title: "Total Locations", dataIndex: "locations" },
+                { title: "Raised Surveys", dataIndex: "raisedSurveys" },
+                { title: "Raised BOQs", dataIndex: "raisedBoqs" },
+                {
+                  title: "IN Cameras (Installed / Total)",
+                  render: (r) =>
+                    `${r.installedInCameras} / ${r.totalInCameras}`,
+                },
+                {
+                  title: "OUT Cameras (Installed / Total)",
+                  render: (r) =>
+                    `${r.installedOutCameras} / ${r.totalOutCameras}`,
+                },
+              ]}
+            />
+          </div>
         </div>
       </div>
     </div>
