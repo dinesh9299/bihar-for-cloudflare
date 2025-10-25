@@ -1,7 +1,7 @@
 import axios from "axios";
 import { message } from "antd";
 
-const BASE_URL = "http://183.82.117.36:1339/api";
+const BASE_URL = "https://biharelection.brihaspathi.com/api";
 
 // 💥 Full-access token (use only for secure admin dashboards)
 const ADMIN_TOKEN =
