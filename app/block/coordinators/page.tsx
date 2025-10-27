@@ -20,6 +20,9 @@ export default function AssemblyCoordinatorsPage() {
   const [error, setError] = useState<string>("");
   const [certBlobUrls, setCertBlobUrls] = useState<Record<number, string>>({});
 
+  const url = process.env.NEXT_PUBLIC_API_URL;
+
+
   // 🔹 Fetch logged-in user
   const fetchUser = async () => {
     try {
@@ -29,7 +32,7 @@ export default function AssemblyCoordinatorsPage() {
         return;
       }
 
-      const res = await bpi.get("/app-user/me?populate=*", {
+      const res = await axios.get(`${url}/app-user/me?populate=*`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

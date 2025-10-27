@@ -556,13 +556,17 @@ export default function LocationDetailsPage() {
             </Button>
           )}
 
-          <Button
-            onClick={() => setIsBoqModalOpen(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-white flex items-center space-x-2"
-          >
-            <FileText className="w-4 h-4" />
-            <span>Raise BOQ</span>
-          </Button>
+
+
+	  
+            <Button
+              onClick={() => setIsBoqModalOpen(true)}
+              className="bg-amber-500 hover:bg-amber-600 text-white flex items-center space-x-2"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Raise BOQ</span>
+            </Button>
+		
           {!allCamerasInstalled && (
             <Button
               onClick={() => setIsCameraModalOpen(true)}
@@ -663,7 +667,7 @@ export default function LocationDetailsPage() {
             <div className="overflow-x-auto border rounded-lg">
               <table className="min-w-full text-sm border-collapse">
                 <tbody>
-                  {location.boqs?.length ? (
+                  {boqs?.length ? (
                     <table className="min-w-full text-sm border-collapse">
                       <thead>
                         <tr className="bg-amber-100 text-gray-800 font-semibold text-left">
@@ -676,7 +680,7 @@ export default function LocationDetailsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {location.boqs.map((boq, index) => (
+                        {boqs.map((boq, index) => (
                           <tr
                             key={boq.id}
                             className="border-b hover:bg-gray-50 text-gray-700"

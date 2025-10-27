@@ -37,8 +37,7 @@ export default function ManageBlocksPage() {
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
-      const token1 =
-        "0ac039714b346f2465c0759415521dcb2201a61c8ce0890559a67f4ce1da1abacbc97f0d4d96d57fb4b4d25dd0a6d157dd001554f8d2da86b859e7a7894e84c2a5652c1f66d01f759da344e096286235c0f5e2c540b21819c3f3df843503b6f341c12d6c4a50a9f80ac85d99f20ae895f1ced331e85f2f7bab504aa376887cad";
+      const token1 =process.env.NEXT_PUBLIC_AUTH_TOKEN || "";
       const headers1 = { Authorization: `Bearer ${token1}` };
 
       // 🧠 1️⃣ Get logged-in user

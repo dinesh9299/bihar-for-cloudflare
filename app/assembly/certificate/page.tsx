@@ -37,6 +37,7 @@ export default function LoggedInUserCertificate() {
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem("token");
+	console.log("token",token);
       const res = await axios.get(`${API_URL}/api/app-user/me?populate=*`, {
         headers: { Authorization: `Bearer ${token}` },
       });

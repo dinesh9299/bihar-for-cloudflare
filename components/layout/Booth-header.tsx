@@ -2,7 +2,6 @@
 
 import { useLogout } from "@/app/logout";
 import { Badge } from "@/components/ui/badge";
-import api from "@/lib/api";
 import { Tooltip } from "antd";
 import axios from "axios";
 import {
@@ -50,33 +49,6 @@ export function BoothHeader({
       type: "",
     },
   });
-
-  //   const getuser = async () => {
-  //     const token = localStorage.getItem("token");
-  //     if (!token) return;
-
-  //     try {
-  //       // First try: default Strapi user
-  //       const res = await api.get("/users/me?populate=*");
-  //       setUser(res.data);
-  //       console.log("✅ Default Strapi user data:", res.data);
-  //     } catch (err: any) {
-  //       console.warn("⚠️ Default user fetch failed, trying App User API...");
-
-  //       try {
-  //         // Second try: App User endpoint
-  //         const res2 = await api.get("/app-user/me"); // 👈 your backend should support this
-  //         setUser(res2.data.user || res2.data);
-  //         console.log("✅ App User data:", res2.data);
-  //       } catch (appErr: any) {
-  //         console.error("❌ Failed to fetch user data:", appErr);
-  //       }
-  //     }
-  //   };
-
-  //   useEffect(() => {
-  //     getuser();
-  //   }, []);
 
   const logout = useLogout();
 

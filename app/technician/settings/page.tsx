@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { PageLayout } from "@/components/layout/page-layout";
 import { ModernSidebar } from "@/components/layout/modern-sidebar";
@@ -34,6 +36,37 @@ import { useRouter } from "next/navigation";
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [showPassword, setShowPassword] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // ✅ Securely handle token from localStorage (browser only)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("token");
+      const expirationTime = localStorage.getItem("tokenExpiration");
+      const currentTime = Date.now();
+
+      if (
+        !storedToken ||
+        (expirationTime && currentTime > parseInt(expirationTime))
+      ) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("tokenExpiration");
+        toast({
+          variant: "destructive",
+          title: "Session Expired",
+          description: "Your session has expired. Please log in again.",
+        });
+        router.push("/");
+        return;
+      }
+
+      setToken(storedToken);
+    }
+  }, [router, toast]);
+
   const [settings, setSettings] = useState({
     profile: {
       name: "Survey Team Admin",
@@ -69,29 +102,6 @@ export default function SettingsPage() {
     newPassword: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const expirationTime = localStorage.getItem("tokenExpiration");
-    const currentTime = Date.now();
-
-    if (!token || (expirationTime && currentTime > parseInt(expirationTime))) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("tokenExpiration");
-      toast({
-        variant: "destructive",
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
-      });
-      router.push("/");
-      return;
-    }
-  }, []);
-
-  const token = localStorage.getItem("token");
-  const { toast } = useToast();
 
   const tabs = [
     { id: "profile", label: "Profile", icon: <User className="w-4 h-4" /> },
@@ -104,6 +114,7 @@ export default function SettingsPage() {
     { id: "security", label: "Security", icon: <Shield className="w-4 h-4" /> },
   ];
 
+  // ✅ Save handler
   const handleSave = () => {
     console.log("Settings saved:", settings);
     toast({
@@ -113,6 +124,7 @@ export default function SettingsPage() {
     });
   };
 
+  // ✅ Change password handler
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -162,11 +174,20 @@ export default function SettingsPage() {
     }
   };
 
+  // 🕒 Wait until token is verified
+  if (!token)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-gray-500 text-lg">Checking session...</p>
+      </div>
+    );
+
+  // ✅ Main UI
   return (
-    <div className="min-h-screen ">
-      <main className="container mx-auto ">
+    <div className="min-h-screen">
+      <main className="container mx-auto">
         <div className="max-w-full sm:max-w-3xl lg:max-w-4xl mx-auto">
-          {/* Tab Navigation */}
+          {/* 🔹 Tab Navigation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -192,7 +213,7 @@ export default function SettingsPage() {
             </ModernCard>
           </motion.div>
 
-          {/* Profile Settings */}
+          {/* 🔸 Profile Tab */}
           {activeTab === "profile" && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -216,71 +237,40 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium">
-                      Full Name
-                    </Label>
-                    <Input
-                      id="name"
-                      value={settings.profile.name}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          profile: {
-                            ...settings.profile,
-                            name: e.target.value,
-                          },
-                        })
-                      }
-                      className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base"
-                    />
-                  </div>
+                  <InputField
+                    label="Full Name"
+                    value={settings.profile.name}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        profile: { ...settings.profile, name: e.target.value },
+                      })
+                    }
+                  />
+                  <InputField
+                    label="Email Address"
+                    type="email"
+                    value={settings.profile.email}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        profile: { ...settings.profile, email: e.target.value },
+                      })
+                    }
+                  />
+                  <InputField
+                    label="Phone Number"
+                    value={settings.profile.phone}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        profile: { ...settings.profile, phone: e.target.value },
+                      })
+                    }
+                  />
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium">
-                      Email Address
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={settings.profile.email}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          profile: {
-                            ...settings.profile,
-                            email: e.target.value,
-                          },
-                        })
-                      }
-                      className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-medium">
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="phone"
-                      value={settings.profile.phone}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          profile: {
-                            ...settings.profile,
-                            phone: e.target.value,
-                          },
-                        })
-                      }
-                      className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="division" className="text-sm font-medium">
-                      Division
-                    </Label>
+                    <Label className="text-sm font-medium">Division</Label>
                     <Select
                       value={settings.profile.division}
                       onValueChange={(value) =>
@@ -294,12 +284,13 @@ export default function SettingsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="All">All Divisions</SelectItem>
-                        <SelectItem value="Pune">Pune</SelectItem>
-                        <SelectItem value="Mumbai">Mumbai</SelectItem>
-                        <SelectItem value="Nashik">Nashik</SelectItem>
-                        <SelectItem value="Nagpur">Nagpur</SelectItem>
-                        <SelectItem value="Aurangabad">Aurangabad</SelectItem>
+                        {["All", "Pune", "Mumbai", "Nashik", "Nagpur", "Aurangabad"].map(
+                          (division) => (
+                            <SelectItem key={division} value={division}>
+                              {division}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -334,249 +325,7 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
-          {/* Notification Settings */}
-          {activeTab === "notifications" && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-4 sm:space-y-6"
-            >
-              <ModernCard className="p-4 sm:p-6">
-                <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-                  <div className="p-2 sm:p-3 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl sm:rounded-2xl">
-                    <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                      Notification Preferences
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Choose how you want to receive notifications
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 sm:space-y-4">
-                  {Object.entries(settings.notifications).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-xl sm:rounded-2xl"
-                      >
-                        <div className="mb-2 sm:mb-0">
-                          <h4 className="font-medium text-gray-900 text-sm sm:text-base capitalize">
-                            {key.replace(/([A-Z])/g, " $1").trim()}
-                          </h4>
-                          <p className="text-xs sm:text-sm text-gray-600">
-                            {key === "emailAlerts" &&
-                              "Receive email notifications for important updates"}
-                            {key === "smsAlerts" &&
-                              "Get SMS alerts for critical system events"}
-                            {key === "pushNotifications" &&
-                              "Browser push notifications for real-time updates"}
-                            {key === "surveyReminders" &&
-                              "Reminders for pending and upcoming surveys"}
-                            {key === "systemUpdates" &&
-                              "Notifications about system maintenance and updates"}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() =>
-                            setSettings({
-                              ...settings,
-                              notifications: {
-                                ...settings.notifications,
-                                [key]: !value,
-                              },
-                            })
-                          }
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            value
-                              ? "bg-gradient-to-r from-amber-400 to-yellow-500"
-                              : "bg-gray-200"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              value ? "translate-x-6" : "translate-x-1"
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    )
-                  )}
-                </div>
-              </ModernCard>
-            </motion.div>
-          )}
-
-          {/* System Settings */}
-          {activeTab === "system" && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-4 sm:space-y-6"
-            >
-              <ModernCard className="p-4 sm:p-6">
-                <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-                  <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl sm:rounded-2xl">
-                    <Database className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                      System Configuration
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Configure system behavior and data management
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Backup Frequency
-                    </Label>
-                    <Select
-                      value={settings.system.backupFrequency}
-                      onValueChange={(value) =>
-                        setSettings({
-                          ...settings,
-                          system: {
-                            ...settings.system,
-                            backupFrequency: value,
-                          },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hourly">Hourly</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Data Retention
-                    </Label>
-                    <Select
-                      value={settings.system.dataRetention}
-                      onValueChange={(value) =>
-                        setSettings({
-                          ...settings,
-                          system: { ...settings.system, dataRetention: value },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="6months">6 Months</SelectItem>
-                        <SelectItem value="1year">1 Year</SelectItem>
-                        <SelectItem value="2years">2 Years</SelectItem>
-                        <SelectItem value="5years">5 Years</SelectItem>
-                        <SelectItem value="permanent">Permanent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">GPS Accuracy</Label>
-                    <Select
-                      value={settings.system.gpsAccuracy}
-                      onValueChange={(value) =>
-                        setSettings({
-                          ...settings,
-                          system: { ...settings.system, gpsAccuracy: value },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low (±10m)</SelectItem>
-                        <SelectItem value="medium">Medium (±5m)</SelectItem>
-                        <SelectItem value="high">High (±1m)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Camera Quality
-                    </Label>
-                    <Select
-                      value={settings.system.cameraQuality}
-                      onValueChange={(value) =>
-                        setSettings({
-                          ...settings,
-                          system: { ...settings.system, cameraQuality: value },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="720p">720p HD</SelectItem>
-                        <SelectItem value="1080p">1080p Full HD</SelectItem>
-                        <SelectItem value="4k">4K Ultra HD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900 text-base sm:text-lg">
-                        Auto Backup
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        Automatically backup survey data
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setSettings({
-                          ...settings,
-                          system: {
-                            ...settings.system,
-                            autoBackup: !settings.system.autoBackup,
-                          },
-                        })
-                      }
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        settings.system.autoBackup
-                          ? "bg-gradient-to-r from-amber-400 to-yellow-500"
-                          : "bg-gray-200"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          settings.system.autoBackup
-                            ? "translate-x-6"
-                            : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </ModernCard>
-            </motion.div>
-          )}
-
-          {/* Security Settings */}
+          {/* 🔹 Security Tab (Password Update) */}
           {activeTab === "security" && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -585,211 +334,56 @@ export default function SettingsPage() {
               className="space-y-4 sm:space-y-6"
             >
               <ModernCard className="p-4 sm:p-6">
-                <div className="flex items-center space-x-3 mb-4 sm:mb-6">
-                  <div className="p-2 sm:p-3 bg-gradient-to-br from-red-400 to-red-600 rounded-xl sm:rounded-2xl">
-                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                      Security Settings
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Manage your account security and access controls
-                    </p>
-                  </div>
-                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  Security Settings
+                </h3>
 
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Session Timeout
-                      </Label>
-                      <Select
-                        value={settings.security.sessionTimeout}
-                        onValueChange={(value) =>
-                          setSettings({
-                            ...settings,
-                            security: {
-                              ...settings.security,
-                              sessionTimeout: value,
-                            },
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="15min">15 Minutes</SelectItem>
-                          <SelectItem value="30min">30 Minutes</SelectItem>
-                          <SelectItem value="1hour">1 Hour</SelectItem>
-                          <SelectItem value="4hours">4 Hours</SelectItem>
-                          <SelectItem value="never">Never</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Password Expiry
-                      </Label>
-                      <Select
-                        value={settings.security.passwordExpiry}
-                        onValueChange={(value) =>
-                          setSettings({
-                            ...settings,
-                            security: {
-                              ...settings.security,
-                              passwordExpiry: value,
-                            },
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="30days">30 Days</SelectItem>
-                          <SelectItem value="60days">60 Days</SelectItem>
-                          <SelectItem value="90days">90 Days</SelectItem>
-                          <SelectItem value="180days">180 Days</SelectItem>
-                          <SelectItem value="never">Never</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 sm:p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-xl sm:rounded-2xl">
-                      <div>
-                        <h4 className="font-medium text-gray-900 text-base sm:text-lg">
-                          Two-Factor Authentication
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          Add an extra layer of security to your account
-                        </p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            security: {
-                              ...settings.security,
-                              twoFactorAuth: !settings.security.twoFactorAuth,
-                            },
-                          })
-                        }
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          settings.security.twoFactorAuth
-                            ? "bg-gradient-to-r from-amber-400 to-yellow-500"
-                            : "bg-gray-200"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            settings.security.twoFactorAuth
-                              ? "translate-x-6"
-                              : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="p-3 sm:p-4 bg-white/50 backdrop-blur-sm border border-white/30 rounded-xl sm:rounded-2xl">
-                      <h4 className="font-medium text-gray-900 text-base sm:text-lg mb-3 sm:mb-4">
-                        Change Password
-                      </h4>
-                      <form
-                        onSubmit={handlePasswordChange}
-                        className="space-y-3 sm:space-y-4"
-                      >
-                        {error && (
-                          <p className="text-red-600 text-sm">{error}</p>
-                        )}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">
-                            Current Password
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              value={passwordData.currentPassword}
-                              onChange={(e) =>
-                                setPasswordData({
-                                  ...passwordData,
-                                  currentPassword: e.target.value,
-                                })
-                              }
-                              placeholder="Enter current password"
-                              className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl pr-12 text-sm sm:text-base"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              {showPassword ? (
-                                <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
-                              ) : (
-                                <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">
-                              New Password
-                            </Label>
-                            <Input
-                              type="password"
-                              value={passwordData.newPassword}
-                              onChange={(e) =>
-                                setPasswordData({
-                                  ...passwordData,
-                                  newPassword: e.target.value,
-                                })
-                              }
-                              placeholder="Enter new password"
-                              className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">
-                              Confirm Password
-                            </Label>
-                            <Input
-                              type="password"
-                              value={passwordData.confirmPassword}
-                              onChange={(e) =>
-                                setPasswordData({
-                                  ...passwordData,
-                                  confirmPassword: e.target.value,
-                                })
-                              }
-                              placeholder="Confirm new password"
-                              className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base"
-                            />
-                          </div>
-                        </div>
-                        <PillButton
-                          variant="accent"
-                          size="sm"
-                          type="submit"
-                          className="px-3 sm:px-4"
-                        >
-                          Update Password
-                        </PillButton>
-                      </form>
-                    </div>
-                  </div>
-                </div>
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="space-y-3 sm:space-y-4"
+                >
+                  {error && <p className="text-red-600 text-sm">{error}</p>}
+                  <PasswordField
+                    label="Current Password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        currentPassword: e.target.value,
+                      })
+                    }
+                    showPassword={showPassword}
+                    toggleShow={() => setShowPassword(!showPassword)}
+                  />
+                  <PasswordField
+                    label="New Password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        newPassword: e.target.value,
+                      })
+                    }
+                  />
+                  <PasswordField
+                    label="Confirm Password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
+                  />
+                  <PillButton variant="accent" size="sm" type="submit">
+                    Update Password
+                  </PillButton>
+                </form>
               </ModernCard>
             </motion.div>
           )}
 
-          {/* Save Actions */}
+          {/* 🔘 Save Actions */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -816,6 +410,74 @@ export default function SettingsPage() {
           </motion.div>
         </div>
       </main>
+    </div>
+  );
+}
+
+/* 🔧 Reusable Input Field Component */
+function InputField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={onChange}
+        className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl text-sm sm:text-base"
+      />
+    </div>
+  );
+}
+
+/* 🔐 Reusable Password Field Component */
+function PasswordField({
+  label,
+  value,
+  onChange,
+  showPassword = false,
+  toggleShow,
+}: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  showPassword?: boolean;
+  toggleShow?: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
+      <div className="relative">
+        <Input
+          type={showPassword ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          placeholder={`Enter ${label.toLowerCase()}`}
+          className="h-10 sm:h-12 bg-white/80 backdrop-blur-sm border-white/30 rounded-xl sm:rounded-2xl pr-12 text-sm sm:text-base"
+        />
+        {toggleShow && (
+          <button
+            type="button"
+            onClick={toggleShow}
+            className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            {showPassword ? (
+              <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
+            ) : (
+              <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

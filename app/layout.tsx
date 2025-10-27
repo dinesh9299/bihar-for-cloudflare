@@ -7,9 +7,9 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Trinai Survey Management System",
+  title: "Bihar Election Management System",
   description:
-    "Comprehensive Trinai survey management for bus stops and transportation hubs",
+    "Comprehensive Bihar Election managemen",
   generator: "v0.dev",
 };
 

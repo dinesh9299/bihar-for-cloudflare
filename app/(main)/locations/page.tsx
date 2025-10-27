@@ -376,7 +376,7 @@ export default function UploadAssembliesAndLocationsPage() {
   return (
     <div className="min-h-screen bg-gray-50 ">
       <div className=" w-full mx-auto bg-white shadow-lg rounded-2xl p-8 space-y-10">
-        {/* 🟪 Assemblies Upload Section */}
+        {/* 🟪 Assemblies Upload Section 
         <div>
           <div className="flex items-center space-x-3 mb-4">
             <FileSpreadsheet className="w-6 h-6 text-indigo-500" />
@@ -399,10 +399,11 @@ export default function UploadAssembliesAndLocationsPage() {
             </Button>
           </div>
         </div>
+	*/}
 
         {/* <hr className="my-6" /> */}
 
-        {/* 🟩 Locations Upload Section */}
+        {/* 🟩 Locations Upload Section
         <div>
           <div className="flex items-center space-x-3 mb-4">
             <FileSpreadsheet className="w-6 h-6 text-amber-500" />
@@ -425,6 +426,7 @@ export default function UploadAssembliesAndLocationsPage() {
             </Button>
           </div>
         </div>
+*/}
 
         {/* Progress Bar */}
         {isUploading && (

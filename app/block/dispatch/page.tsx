@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Table, Button, Spin, message, Modal } from "antd";
 import axios from "axios";
 import dayjs from "dayjs";
+import bpi from "@/lib/bpi"; // ✅ use same axios instance like in your working page
 
 export default function BlockDispatchPage() {
   const [user, setUser] = useState<any>(null);
@@ -14,69 +15,93 @@ export default function BlockDispatchPage() {
   const [selectedDispatch, setSelectedDispatch] = useState<any>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const ADMIN_TOKEN =
-    "0ac039714b346f2465c0759415521dcb2201a61c8ce0890559a67f4ce1da1abacbc97f0d4d96d57fb4b4d25dd0a6d157dd001554f8d2da86b859e7a7894e84c2a5652c1f66d01f759da344e096286235c0f5e2c540b21819c3f3df843503b6f341c12d6c4a50a9f80ac85d99f20ae895f1ced331e85f2f7bab504aa376887cad";
+  const ADMIN_TOKEN = process.env.NEXT_PUBLIC_AUTH_TOKEN || "";
 
-  // 🔹 Step 1: Fetch logged-in user and their block
+  // ✅ Safe helper for reading documentId or id
+  const readDocId = (obj: any) => {
+    if (!obj) return undefined;
+    return (
+      obj.documentId ||
+      obj?.data?.attributes?.documentId ||
+      obj?.attributes?.documentId ||
+      obj?.id ||
+      undefined
+    );
+  };
+
+  // ✅ Step 1: Fetch logged-in user and assigned block
   const fetchUserAndBlock = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      if (!token) return message.error("No token found. Please login again.");
-
-      // Fetch logged-in user
-      const userRes = await axios.get(`${API_URL}/api/app-user/me?populate=*`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const u = userRes.data.user;
-      setUser(u);
-
-      // Fetch block assigned to this user
-      const blockRes = await axios.get(
-        `${API_URL}/api/blocks?filters[assigned_coordinator][documentId][$eq]=${u.documentId}&populate=*`,
-        { headers: { Authorization: `Bearer ${ADMIN_TOKEN}` } }
-      );
-      const blockData = blockRes.data.data?.[0];
-      if (!blockData) {
-        message.warning("No block assigned to this user.");
-        setLoading(false);
+      if (!token) {
+        message.error("No token found. Please login again.");
         return;
       }
 
-      setBlock(blockData);
-      await fetchDispatches(blockData.documentId);
-    } catch (err) {
-      console.error("Error fetching user/block:", err);
+      // 1️⃣ Fetch logged-in user
+      const userRes = await bpi.get("/app-user/me?populate=*", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const currentUser = userRes.data.user;
+      setUser(currentUser);
+
+      // 2️⃣ Fetch all blocks with assigned_coordinator populated
+      const blocksRes = await bpi.get(
+        `/blocks?populate[assigned_coordinator]=true&populate[Assembly]=true`,
+        { headers: { Authorization: `Bearer ${ADMIN_TOKEN}` } }
+      );
+      const allBlocks = blocksRes.data.data || [];
+
+      // 3️⃣ Filter blocks assigned to this user
+      const myBlocks = allBlocks.filter(
+        (b: any) => readDocId(b.assigned_coordinator) === currentUser.documentId
+      );
+
+      if (myBlocks.length === 0) {
+        message.warning("No block assigned to this user.");
+        setBlock(null);
+        return;
+      }
+
+      const myBlock = myBlocks[0];
+      setBlock(myBlock);
+
+      // 4️⃣ Fetch dispatches for this block
+      await fetchDispatches(readDocId(myBlock));
+    } catch (err: any) {
+      console.error("❌ Error fetching user/block:", err);
       message.error("Failed to load user or block info.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Step 2: Fetch dispatches sent to this block
+  // ✅ Step 2: Fetch dispatches linked to this block
   const fetchDispatches = async (blockDocId: string) => {
+    if (!blockDocId) return;
     try {
-      const res = await axios.get(
-        `${API_URL}/api/dispatches?filters[To_Block][documentId][$eq]=${blockDocId}&populate=from_assembly&populate=Photo`,
+      const res = await bpi.get(
+        `/dispatches?filters[To_Block][documentId][$eq]=${blockDocId}&populate[Photo]=true&populate[from_assembly]=true`,
         { headers: { Authorization: `Bearer ${ADMIN_TOKEN}` } }
       );
-      setDispatches(res.data.data || []);
+      const dispatchList = res.data.data || [];
+      setDispatches(dispatchList);
     } catch (err) {
-      console.error("Error fetching dispatches:", err);
+      console.error("❌ Error fetching dispatches:", err);
       message.error("Failed to load dispatches.");
     }
   };
 
-  // 🔹 Step 3: Confirm Receipt
+  // ✅ Step 3: Confirm receipt
   const handleConfirmReceipt = async () => {
     if (!selectedDispatch) return;
-
     try {
       const token = localStorage.getItem("token");
       if (!token) return message.error("Token missing.");
 
-      await axios.put(
-        `${API_URL}/api/dispatches/${selectedDispatch.documentId}`,
+      await bpi.put(
+        `/dispatches/${selectedDispatch.documentId}`,
         {
           data: {
             State: "Delivered",
@@ -90,9 +115,9 @@ export default function BlockDispatchPage() {
       message.success("✅ Dispatch marked as received!");
       setConfirmModal(false);
       setSelectedDispatch(null);
-      fetchDispatches(block.documentId);
+      await fetchDispatches(readDocId(block));
     } catch (err) {
-      console.error("Error confirming receipt:", err);
+      console.error("❌ Error confirming receipt:", err);
       message.error("Failed to confirm receipt.");
     }
   };
@@ -127,7 +152,7 @@ export default function BlockDispatchPage() {
                 title: "From Assembly",
                 render: (record) =>
                   record.from_assembly?.Assembly_Name ||
-                  record.from_assembly?.[0]?.Assembly_Name ||
+                  record.from_assembly?.data?.attributes?.Assembly_Name ||
                   "—",
               },
               { title: "Material", dataIndex: "Material_Name" },
@@ -162,16 +187,21 @@ export default function BlockDispatchPage() {
               {
                 title: "Photo",
                 dataIndex: "Photo",
-                render: (photo) =>
-                  photo?.url ? (
+                render: (photo) => {
+                  const photoUrl =
+                    photo?.url ||
+                    photo?.data?.attributes?.url ||
+                    photo?.attributes?.url;
+                  return photoUrl ? (
                     <img
-                      src={`${API_URL}${photo.url}`}
+                      src={`${API_URL}${photoUrl}`}
                       alt="dispatch"
                       className="w-16 h-16 object-cover rounded-md"
                     />
                   ) : (
                     "—"
-                  ),
+                  );
+                },
               },
               {
                 title: "Action",
@@ -211,7 +241,8 @@ export default function BlockDispatchPage() {
           Are you sure you have received this dispatch from{" "}
           <b>
             {selectedDispatch?.from_assembly?.Assembly_Name ||
-              selectedDispatch?.from_assembly?.[0]?.Assembly_Name ||
+              selectedDispatch?.from_assembly?.data?.attributes
+                ?.Assembly_Name ||
               "Assembly"}
           </b>{" "}
           ?
