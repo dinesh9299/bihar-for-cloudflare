@@ -6,7 +6,7 @@
     "dev": "next dev -H 0.0.0.0 -p 4000",
     "lint": "next lint",
     "start": "next start",
-    "build": "next-on-pages build"
+    "build": "opennext build"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
@@ -79,7 +79,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.11.0",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
