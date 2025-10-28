@@ -32,30 +32,31 @@ export default function AddAssemblyCoordinatorPage() {
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fetch logged-in user (for created_by)
-  const fetchUser = async () => {
-    try {
-      const res = await api.get("/users/me");
-      setUser(res.data);
-    } catch (err) {
-      console.error("Error fetching user:", err);
-      message.error("Failed to fetch user details.");
-    }
-  };
+  // 🧩 Fetch logged-in user + districts together
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const [userRes, districtRes] = await Promise.all([
+          api.get("/users/me"),
+          api.get("/districts?pagination[pageSize]=1000"),
+        ]);
+        setUser(userRes.data);
+        setDistricts(districtRes.data.data);
+      } catch (err) {
+        console.error("Initialization failed:", err);
+        message.error("Failed to load user or district data.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  // Fetch districts
-  const fetchDistricts = async () => {
-    try {
-      const res = await api.get("/districts?pagination[pageSize]=1000");
-      setDistricts(res.data.data);
-    } catch (err) {
-      console.error("Error fetching districts:", err);
-    }
-  };
-
-  // Fetch assemblies by selected district documentId
+  // 🧩 Fetch assemblies by district
   const fetchAssemblies = async (districtDocId: string) => {
     try {
       const res = await api.get(
@@ -67,34 +68,37 @@ export default function AddAssemblyCoordinatorPage() {
     }
   };
 
-  useEffect(() => {
-    fetchUser();
-    fetchDistricts();
-  }, []);
+  // 🧩 Form validation helper
+  const validateForm = () => {
+    const required = [
+      "Full_Name",
+      "email",
+      "password",
+      "phone_Number",
+      "District",
+    ];
+    for (const key of required) {
+      if (!form[key as keyof typeof form]) {
+        message.warning("Please fill all required fields.");
+        return false;
+      }
+    }
+    return true;
+  };
 
-  // Handle Submit
+  // 🧩 Handle submit
   const handleSubmit = async () => {
-    if (
-      !form.Full_Name ||
-      !form.email ||
-      !form.password ||
-      !form.phone_Number ||
-      !form.District
-    ) {
-      message.warning("Please fill all required fields.");
+    if (!validateForm()) return;
+
+    if (!user?.documentId) {
+      message.error("Unable to identify current user. Please re-login.");
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
+
     try {
-      const roleID = "Assembly Coordinator";
-
-      if (!user?.documentId) {
-        message.error("Unable to identify current user. Please re-login.");
-        return;
-      }
-
-      // Find selected District and Assembly names
+      // Lookup selected district and assembly names
       const selectedDistrict = districts.find(
         (d) => d.documentId === form.District
       );
@@ -102,12 +106,11 @@ export default function AddAssemblyCoordinatorPage() {
         (a) => a.documentId === form.Assembly
       );
 
-      // ✅ Save names instead of documentIds
       const payload = {
         username: form.Full_Name,
         email: form.email,
         password: form.password,
-        role: roleID,
+        role: "Assembly Coordinator",
         Full_Name: form.Full_Name,
         Phone_Number: form.phone_Number,
         State: form.State,
@@ -123,15 +126,13 @@ export default function AddAssemblyCoordinatorPage() {
         createdby: user.documentId,
       };
 
-      // Step 1️⃣: Register the user
+      // Step 1️⃣: Register user
       const registerRes = await api.post("/app-user/register", payload);
       const createdUser = registerRes.data?.data;
-
-      if (!createdUser?.id && !createdUser?.documentId) {
+      if (!createdUser?.id && !createdUser?.documentId)
         throw new Error("User not created");
-      }
 
-      // Step 2️⃣: Upload the photo (if selected)
+      // Step 2️⃣: Upload photo if selected
       if (form.Photo) {
         const formData = new FormData();
         formData.append("files", form.Photo);
@@ -153,11 +154,20 @@ export default function AddAssemblyCoordinatorPage() {
           "Failed to create Assembly Coordinator."
       );
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  if (!user)
+  // 🧩 Handle photo selection + preview
+  const handlePhotoUpload = (file: File) => {
+    setForm({ ...form, Photo: file });
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
+    return false;
+  };
+
+  // 🧩 Loader
+  if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
         <Spin size="large" />
@@ -171,172 +181,157 @@ export default function AddAssemblyCoordinatorPage() {
           Add Assembly Coordinator
         </h2>
 
-        <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-md">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* 👤 Full Name */}
-            <Input
-              placeholder="Full Name"
-              value={form.Full_Name}
-              onChange={(e) => setForm({ ...form, Full_Name: e.target.value })}
-              className="w-full"
-            />
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Full Name */}
+          <Input
+            placeholder="Full Name"
+            value={form.Full_Name}
+            onChange={(e) => setForm({ ...form, Full_Name: e.target.value })}
+          />
 
-            {/* 📧 Email */}
-            <Input
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full"
-            />
+          {/* Email */}
+          <Input
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
 
-            {/* 🔑 Password */}
-            <Input.Password
-              placeholder="Password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full"
-            />
+          {/* Password */}
+          <Input.Password
+            placeholder="Password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
 
-            {/* 📞 Phone Number */}
-            <Input
-              placeholder="Phone Number"
-              value={form.phone_Number}
-              onChange={(e) =>
-                setForm({ ...form, phone_Number: e.target.value })
-              }
-              className="w-full"
-            />
+          {/* Phone */}
+          <Input
+            placeholder="Phone Number"
+            value={form.phone_Number}
+            onChange={(e) => setForm({ ...form, phone_Number: e.target.value })}
+          />
 
-            {/* 🆔 Aadhar */}
-            <Input
-              placeholder="Aadhar"
-              value={form.Aadhar}
-              onChange={(e) => setForm({ ...form, Aadhar: e.target.value })}
-              className="w-full"
-            />
+          {/* Aadhar */}
+          <Input
+            placeholder="Aadhar"
+            value={form.Aadhar}
+            onChange={(e) => setForm({ ...form, Aadhar: e.target.value })}
+          />
 
-            {/* 👨‍👦 Father’s Name */}
-            <Input
-              placeholder="Father's Name"
-              value={form.Father_Name}
-              onChange={(e) =>
-                setForm({ ...form, Father_Name: e.target.value })
-              }
-              className="w-full"
-            />
+          {/* Father’s Name */}
+          <Input
+            placeholder="Father's Name"
+            value={form.Father_Name}
+            onChange={(e) => setForm({ ...form, Father_Name: e.target.value })}
+          />
 
-            {/* 👩‍👦 Mother’s Name */}
-            <Input
-              placeholder="Mother's Name"
-              value={form.Mother_Name}
-              onChange={(e) =>
-                setForm({ ...form, Mother_Name: e.target.value })
-              }
-              className="w-full"
-            />
+          {/* Mother’s Name */}
+          <Input
+            placeholder="Mother's Name"
+            value={form.Mother_Name}
+            onChange={(e) => setForm({ ...form, Mother_Name: e.target.value })}
+          />
 
-            {/* 🏦 Bank or UPI ID */}
-            <Input
-              placeholder="Bank / UPI ID"
-              value={form.Bank_or_UPI}
-              onChange={(e) =>
-                setForm({ ...form, Bank_or_UPI: e.target.value })
-              }
-              className="w-full"
-            />
+          {/* Bank / UPI */}
+          <Input
+            placeholder="Bank / UPI ID"
+            value={form.Bank_or_UPI}
+            onChange={(e) => setForm({ ...form, Bank_or_UPI: e.target.value })}
+          />
 
-            {/* 🏡 Village */}
-            <Input
-              placeholder="Village"
-              value={form.Village}
-              onChange={(e) => setForm({ ...form, Village: e.target.value })}
-              className="w-full"
-            />
+          {/* Village */}
+          <Input
+            placeholder="Village"
+            value={form.Village}
+            onChange={(e) => setForm({ ...form, Village: e.target.value })}
+          />
 
-            {/* 📮 Pincode */}
-            <Input
-              placeholder="Pincode"
-              value={form.Pincode}
-              onChange={(e) => setForm({ ...form, Pincode: e.target.value })}
-              className="w-full"
-            />
+          {/* Pincode */}
+          <Input
+            placeholder="Pincode"
+            value={form.Pincode}
+            onChange={(e) => setForm({ ...form, Pincode: e.target.value })}
+          />
 
-            {/* 🌎 State */}
-            <Input
-              placeholder="State"
-              value={form.State}
-              onChange={(e) => setForm({ ...form, State: e.target.value })}
-              className="w-full"
-            />
+          {/* State */}
+          <Input
+            placeholder="State"
+            value={form.State}
+            onChange={(e) => setForm({ ...form, State: e.target.value })}
+          />
 
-            {/* 🏛️ Select District */}
-            <Select
-              placeholder="Select District"
-              value={form.District || undefined}
-              onChange={(value) => {
-                setForm({ ...form, District: value, Assembly: "" });
-                fetchAssemblies(value);
-              }}
-              className="w-full"
+          {/* District */}
+          <Select
+            placeholder="Select District"
+            value={form.District || undefined}
+            onChange={(value) => {
+              setForm({ ...form, District: value, Assembly: "" });
+              fetchAssemblies(value);
+            }}
+            className="w-full"
+            showSearch
+            optionFilterProp="children"
+          >
+            {districts.map((d) => (
+              <Option key={d.documentId} value={d.documentId}>
+                {d.district_name}
+              </Option>
+            ))}
+          </Select>
+
+          {/* Assembly */}
+          <Select
+            placeholder="Select Assembly"
+            value={form.Assembly || undefined}
+            onChange={(value) => setForm({ ...form, Assembly: value })}
+            disabled={!form.District}
+            className="w-full"
+          >
+            {assemblies.map((a) => (
+              <Option key={a.documentId} value={a.documentId}>
+                {a.Assembly_Name}
+              </Option>
+            ))}
+          </Select>
+
+          {/* Photo Upload */}
+          <div className="flex flex-col items-start gap-2">
+            <Upload
+              beforeUpload={handlePhotoUpload}
+              maxCount={1}
+              accept="image/*"
+              showUploadList={false}
             >
-              {districts.map((d) => (
-                <Option key={d.documentId} value={d.documentId}>
-                  {d.district_name}
-                </Option>
-              ))}
-            </Select>
-
-            {/* 🗳️ Select Assembly */}
-            <Select
-              placeholder="Select Assembly"
-              value={form.Assembly || undefined}
-              onChange={(value) => setForm({ ...form, Assembly: value })}
-              disabled={!form.District}
-              className="w-full"
-            >
-              {assemblies.map((a) => (
-                <Option key={a.documentId} value={a.documentId}>
-                  {a.Assembly_Name}
-                </Option>
-              ))}
-            </Select>
-
-            {/* 📸 Photo Upload */}
-            <div className="flex flex-col gap-2">
-              <Upload
-                beforeUpload={(file) => {
-                  setForm({ ...form, Photo: file });
-                  return false;
-                }}
-                maxCount={1}
-                accept="image/*"
-              >
-                <Button className="w-full bg-green-500 text-white hover:bg-green-600">
-                  <UploadOutlined /> Upload Photo
-                </Button>
-              </Upload>
-            </div>
-
-            {/* 🏠 Address (Full Width) */}
-            <div className="col-span-1 md:col-span-2">
-              <Input.TextArea
-                placeholder="Address"
-                rows={3}
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                className="w-full"
+              <Button className="bg-green-500 text-white hover:bg-green-600">
+                <UploadOutlined /> Upload Photo
+              </Button>
+            </Upload>
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-24 h-24 rounded-lg border object-cover"
               />
-            </div>
+            )}
+          </div>
+
+          {/* Address */}
+          <div className="col-span-1 md:col-span-2">
+            <Input.TextArea
+              placeholder="Address"
+              rows={3}
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
           </div>
         </div>
 
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end mt-8">
           <Button
             onClick={handleSubmit}
             className="bg-blue-500 hover:bg-blue-600 text-white"
-            disabled={loading}
+            disabled={submitting}
           >
-            {loading ? <Spin size="small" /> : "Create Coordinator"}
+            {submitting ? <Spin size="small" /> : "Create Coordinator"}
           </Button>
         </div>
       </div>

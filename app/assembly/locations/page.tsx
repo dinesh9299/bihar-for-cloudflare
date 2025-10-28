@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Input, Pagination } from "antd";
 import bpi from "@/lib/bpi";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const [user, setUser] = useState<any>(null);
@@ -10,8 +12,13 @@ const Page = () => {
   const [locations, setLocations] = useState<any[]>([]);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [searchPSNo, setSearchPSNo] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const baseurl = process.env.NEXT_PUBLIC_API_URL;
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,10 +118,23 @@ const Page = () => {
 
         {locations.length > 0 ? (
           <div className="overflow-x-auto border rounded-lg">
+            {/* Search input */}
+            <div className="p-4 flex items-center justify-between">
+              <Input
+                placeholder="Search by PS Number"
+                value={searchPSNo}
+                onChange={(e) => {
+                  setSearchPSNo(e.target.value || "");
+                  setCurrentPage(1);
+                }}
+                style={{ width: 220 }}
+                allowClear
+              />
+            </div>
             <table className="min-w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-gradient-to-b from-blue-50 to-blue-50 text-gray-800 font-semibold text-left">
-                  <th className="px-4 py-2">#</th>
+                  <th className="px-4 py-2">PS No</th>
                   <th className="px-4 py-2">Polling Station Name</th>
                   <th className="px-4 py-2">Location</th>
                   <th className="px-4 py-2">Latitude</th>
@@ -122,20 +142,58 @@ const Page = () => {
                 </tr>
               </thead>
               <tbody>
-                {locations.map((loc: any, idx: number) => (
-                  <tr
-                    key={loc.documentId || idx}
-                    className="border-b hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-2">{loc.PS_No}</td>
-                    <td className="px-4 py-2 font-medium">{loc.PS_Name}</td>
-                    <td className="px-4 py-2">{loc.PS_Location}</td>
-                    <td className="px-4 py-2">{loc.Latitude || "—"}</td>
-                    <td className="px-4 py-2">{loc.Longitude || "—"}</td>
-                  </tr>
-                ))}
+                {locations
+                  .filter((loc: any) =>
+                    searchPSNo
+                      ? loc?.PS_No?.toString()
+                          .toLowerCase()
+                          .includes(searchPSNo.toLowerCase())
+                      : true
+                  )
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((loc: any, idx: number) => (
+                    <tr
+                      key={loc.documentId || idx}
+                      className="border-b cursor-pointer hover:bg-gray-50"
+                      onClick={() =>
+                        router.push(`/assembly/locations/${loc.documentId}`)
+                      }
+                    >
+                      <td className="px-4 py-2">{loc.PS_No}</td>
+                      <td className="px-4 py-2 font-medium">{loc.PS_Name}</td>
+                      <td className="px-4 py-2">{loc.PS_Location}</td>
+                      <td className="px-4 py-2">{loc.Latitude || "—"}</td>
+                      <td className="px-4 py-2">{loc.Longitude || "—"}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
+            {/* Pagination */}
+            <div className="p-4 flex justify-end">
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={
+                  locations.filter((loc: any) =>
+                    searchPSNo
+                      ? loc?.PS_No?.toString()
+                          .toLowerCase()
+                          .includes(searchPSNo.toLowerCase())
+                      : true
+                  ).length
+                }
+                showSizeChanger
+                showQuickJumper
+                onChange={(page, size) => {
+                  setCurrentPage(page);
+                  if (size && size !== pageSize) setPageSize(size);
+                }}
+                onShowSizeChange={(_current, size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
           </div>
         ) : (
           <p className="text-gray-500 italic pl-2">

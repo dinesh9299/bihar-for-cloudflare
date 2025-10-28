@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Spin, message, Select } from "antd";
+import { Spin, message, Select, Input, Pagination } from "antd";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 
@@ -15,6 +15,9 @@ export default function AssemblyDetailsPage() {
   const [selectedCoordinators, setSelectedCoordinators] = useState<number[]>(
     []
   );
+  const [searchPSNo, setSearchPSNo] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [editingCoordinators, setEditingCoordinators] =
     useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
@@ -259,6 +262,19 @@ export default function AssemblyDetailsPage() {
           )}
         </div>
 
+        {/* 🔹 Search Input */}
+        <div className="mb-4">
+          <Input
+            placeholder="Search by PS Number"
+            value={searchPSNo}
+            onChange={(e) => {
+              setSearchPSNo(e.target.value);
+              setCurrentPage(1); // Reset to first page when searching
+            }}
+            style={{ width: 200 }}
+          />
+        </div>
+
         {/* 🔹 Table of Locations */}
         {locations.length === 0 ? (
           <p className="text-gray-500 italic">No locations found.</p>
@@ -272,26 +288,68 @@ export default function AssemblyDetailsPage() {
                   <th className="px-4 py-2">Location (Village)</th>
                   <th className="px-4 py-2">Latitude</th>
                   <th className="px-4 py-2">Longitude</th>
+                  <th className="px-4 py-2">PS No</th>
                 </tr>
               </thead>
 
               <tbody>
-                {locations.map((loc: any, index: number) => (
-                  <tr
-                    key={loc.documentId}
-                    className="border-b hover:bg-gray-50 cursor-pointer"
-                  >
-                    <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2 font-medium">
-                      {loc.PS_Name || "—"}
-                    </td>
-                    <td className="px-4 py-2">{loc.PS_Location || "—"}</td>
-                    <td className="px-4 py-2">{loc.Latitude || "—"}</td>
-                    <td className="px-4 py-2">{loc.Longitude || "—"}</td>
-                  </tr>
-                ))}
+                {locations
+                  .filter((loc: any) =>
+                    searchPSNo
+                      ? loc.PS_No?.toString()
+                          .toLowerCase()
+                          .includes(searchPSNo.toLowerCase())
+                      : true
+                  )
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((loc: any, index: number) => (
+                    <tr
+                      key={loc.documentId}
+                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      onClick={() =>
+                        router.push(`/district/locations/${loc.documentId}`)
+                      }
+                    >
+                      <td className="px-4 py-2">
+                        {(currentPage - 1) * pageSize + index + 1}
+                      </td>
+                      <td className="px-4 py-2 font-medium">
+                        {loc.PS_Name || "—"}
+                      </td>
+                      <td className="px-4 py-2">{loc.PS_Location || "—"}</td>
+                      <td className="px-4 py-2">{loc.Latitude || "—"}</td>
+                      <td className="px-4 py-2">{loc.Longitude || "—"}</td>
+                      <td className="px-4 py-2">{loc.PS_No || "—"}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* 🔹 Pagination */}
+        {locations.length > 0 && (
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={currentPage}
+              total={
+                locations.filter((loc: any) =>
+                  searchPSNo
+                    ? loc.PS_No?.toString()
+                        .toLowerCase()
+                        .includes(searchPSNo.toLowerCase())
+                    : true
+                ).length
+              }
+              pageSize={pageSize}
+              onChange={(page) => setCurrentPage(page)}
+              onShowSizeChange={(current, size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+              showSizeChanger
+              showQuickJumper
+            />
           </div>
         )}
       </div>

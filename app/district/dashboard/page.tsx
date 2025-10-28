@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, Spin } from "antd";
+import { Table, Spin, Skeleton } from "antd";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -15,6 +15,7 @@ import {
 export default function DistrictCoordinatorDashboardPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [partialLoading, setPartialLoading] = useState(false);
   const [district, setDistrict] = useState<any>(null);
   const [assemblies, setAssemblies] = useState<any[]>([]);
   const [summary, setSummary] = useState({
@@ -36,7 +37,6 @@ export default function DistrictCoordinatorDashboardPage() {
       const res = await api.get("/users/me?populate=*");
       return res.data;
     } catch (err) {
-      console.error("Failed to fetch user:", err);
       toast({
         variant: "destructive",
         title: "Error fetching user",
@@ -51,35 +51,39 @@ export default function DistrictCoordinatorDashboardPage() {
     try {
       setLoading(true);
 
-      // 1️⃣ Fetch district and its assemblies
-      const distRes = await api.get(
-        `/districts/${districtId}?populate=assemblies`
-      );
+      // 🕸 Parallel fetch — district + location count
+      const [distRes, locCountRes] = await Promise.all([
+        api.get(`/districts/${districtId}?populate=assemblies`),
+        api.get(
+          `/locations?filters[assembly][district][documentId][$eq]=${districtId}&pagination[pageSize]=1`
+        ),
+      ]);
+
       const distData = distRes.data.data;
       setDistrict(distData);
-      const assembliesList = distData.assemblies || [];
 
-      // 2️⃣ Count total locations in this district
-      const locCountRes = await api.get(
-        `/locations?filters[assembly][district][documentId][$eq]=${distData.documentId}&pagination[pageSize]=1`
-      );
+      const assembliesList = distData.assemblies || [];
       const totalLocations = locCountRes.data.meta?.pagination?.total ?? 0;
 
-      // 3️⃣ Fetch all cameras under district
-      let allCameras: any[] = [];
-      let camPage = 1;
-      while (true) {
-        const res = await api.get(
-          `/cameras?filters[assigned_booth][assembly][district][documentId][$eq]=${distData.documentId}&pagination[page]=${camPage}&pagination[pageSize]=100&populate=assigned_booth.assembly`
-        );
-        const pageData = res.data.data || [];
-        allCameras = [...allCameras, ...pageData];
-        const meta = res.data.meta?.pagination;
-        if (!meta || camPage >= meta.pageCount) break;
-        camPage++;
-      }
+      // 🧮 Parallel paginated camera fetching
+      const fetchCameras = async () => {
+        let all: any[] = [];
+        let page = 1;
+        while (true) {
+          const res = await api.get(
+            `/cameras?filters[assigned_booth][assembly][district][documentId][$eq]=${distData.documentId}&pagination[page]=${page}&pagination[pageSize]=100&populate=assigned_booth.assembly`
+          );
+          const data = res.data.data || [];
+          all.push(...data);
+          const meta = res.data.meta?.pagination;
+          if (!meta || page >= meta.pageCount) break;
+          page++;
+        }
+        return all;
+      };
 
-      // ✅ Normalize cameras
+      const allCameras = await fetchCameras();
+
       const normalizedCameras = allCameras.map((c: any) => {
         const attrs = c.attributes ?? c;
         const assigned =
@@ -94,32 +98,55 @@ export default function DistrictCoordinatorDashboardPage() {
         };
       });
 
-      // ✅ District-level camera summary
+      // 🎥 District-level camera summary
+      // 🎥 District-level camera summary
       const installedInCameras = normalizedCameras.filter(
         (c) => c.Position === "IN" && c.state === "Installed"
       ).length;
       const installedOutCameras = normalizedCameras.filter(
         (c) => c.Position === "OUT" && c.state === "Installed"
       ).length;
+
+      // ✅ total cameras per location = 1 IN + 1 OUT
       const totalInCameras = totalLocations;
       const totalOutCameras = totalLocations;
 
-      // 4️⃣ Per-Assembly Breakdown
-      const assemblyData = await Promise.all(
+      // ✅ Initialize with district-level totals
+      const totalsTemplate = {
+        totalAssemblies: assembliesList.length,
+        totalLocations: 0, // 🧩 start from 0 to avoid adding twice
+        totalSurveys: 0,
+        raisedSurveys: 0,
+        totalBoqs: 0,
+        raisedBoqs: 0,
+        totalInCameras: totalInCameras,
+        installedInCameras: installedInCameras,
+        totalOutCameras: totalOutCameras,
+        installedOutCameras: installedOutCameras,
+      };
+
+      setSummary(totalsTemplate);
+
+      // 🧩 Fetch assembly data progressively (non-blocking)
+      setPartialLoading(true);
+      const assemblyData: any[] = [];
+
+      await Promise.all(
         assembliesList.map(async (assembly) => {
-          const locRes = await api.get(
-            `/locations?filters[assembly][documentId][$eq]=${assembly.documentId}&pagination[pageSize]=1`
-          );
+          const [locRes, surveyRes, boqRes] = await Promise.all([
+            api.get(
+              `/locations?filters[assembly][documentId][$eq]=${assembly.documentId}&pagination[pageSize]=1`
+            ),
+            api.get(
+              `/surveys?filters[booth][assembly][documentId][$eq]=${assembly.documentId}&pagination[pageSize]=1`
+            ),
+            api.get(
+              `/boqs?filters[location][assembly][documentId][$eq]=${assembly.documentId}&pagination[pageSize]=1`
+            ),
+          ]);
+
           const totalLocs = locRes.data.meta?.pagination?.total ?? 0;
-
-          const surveyRes = await api.get(
-            `/surveys?filters[booth][assembly][documentId][$eq]=${assembly.documentId}&pagination[pageSize]=1`
-          );
           const raisedSurveyCount = surveyRes.data.meta?.pagination?.total ?? 0;
-
-          const boqRes = await api.get(
-            `/boqs?filters[location][assembly][documentId][$eq]=${assembly.documentId}&pagination[pageSize]=1`
-          );
           const raisedBoqCount = boqRes.data.meta?.pagination?.total ?? 0;
 
           const cams = normalizedCameras.filter(
@@ -133,7 +160,7 @@ export default function DistrictCoordinatorDashboardPage() {
             (c) => c.Position === "OUT" && c.state === "Installed"
           ).length;
 
-          return {
+          const data = {
             id: assembly.documentId,
             Assembly_Name: assembly.Assembly_Name,
             Assembly_No: assembly.Assembly_No,
@@ -147,43 +174,32 @@ export default function DistrictCoordinatorDashboardPage() {
             installedInCameras: installedIn,
             installedOutCameras: installedOut,
           };
+
+          assemblyData.push(data);
+          // Progressive render (avoid re-renders for each)
+          if (assemblyData.length % 3 === 0) {
+            setAssemblies([...assemblyData]);
+          }
         })
       );
 
+      // ✅ Final render
       setAssemblies(assemblyData);
 
-      // 5️⃣ Aggregate District Summary
-      const totals = assemblyData.reduce(
-        (acc, a) => {
-          acc.totalAssemblies += 1;
-          acc.totalLocations += a.locations;
-          acc.totalSurveys += a.totalSurveys;
-          acc.raisedSurveys += a.raisedSurveys;
-          acc.totalBoqs += a.totalBoqs;
-          acc.raisedBoqs += a.raisedBoqs;
-          acc.totalInCameras += a.totalInCameras;
-          acc.installedInCameras += a.installedInCameras;
-          acc.totalOutCameras += a.totalOutCameras;
-          acc.installedOutCameras += a.installedOutCameras;
-          return acc;
-        },
-        {
-          totalAssemblies: 0,
-          totalLocations: 0,
-          totalSurveys: 0,
-          raisedSurveys: 0,
-          totalBoqs: 0,
-          raisedBoqs: 0,
-          totalInCameras: 0,
-          installedInCameras: 0,
-          totalOutCameras: 0,
-          installedOutCameras: 0,
-        }
-      );
+      // Update summary totals
+      const totals = assemblyData.reduce((acc, a) => {
+        acc.totalLocations += a.locations;
+        acc.totalSurveys += a.totalSurveys;
+        acc.raisedSurveys += a.raisedSurveys;
+        acc.totalBoqs += a.totalBoqs;
+        acc.raisedBoqs += a.raisedBoqs;
+        acc.installedInCameras += a.installedInCameras;
+        acc.installedOutCameras += a.installedOutCameras;
+        return acc;
+      }, totalsTemplate);
 
       setSummary(totals);
     } catch (err: any) {
-      console.error("Error loading dashboard:", err);
       toast({
         variant: "destructive",
         title: "Error",
@@ -191,6 +207,7 @@ export default function DistrictCoordinatorDashboardPage() {
       });
     } finally {
       setLoading(false);
+      setPartialLoading(false);
     }
   };
 
@@ -199,8 +216,7 @@ export default function DistrictCoordinatorDashboardPage() {
     (async () => {
       const u = await getUser();
       if (u?.districts?.length) {
-        const districtId = u.districts[0].documentId;
-        fetchDashboardData(districtId);
+        fetchDashboardData(u.districts[0].documentId);
       } else {
         setLoading(false);
         toast({
@@ -230,36 +246,42 @@ export default function DistrictCoordinatorDashboardPage() {
 
         {/* Overview Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
-          <DashboardCard
-            icon={<MapPin className="text-indigo-500" />}
-            label="Total Assemblies"
-            value={summary.totalAssemblies}
-          />
-          <DashboardCard
-            icon={<FileSpreadsheet className="text-amber-500" />}
-            label="Total Locations"
-            value={summary.totalLocations}
-          />
-          <DashboardCard
-            icon={<ClipboardList className="text-green-500" />}
-            label="Surveys (Raised / Total)"
-            value={`${summary.raisedSurveys} / ${summary.totalSurveys}`}
-          />
-          <DashboardCard
-            icon={<BarChart3 className="text-blue-500" />}
-            label="BOQs (Raised / Total)"
-            value={`${summary.raisedBoqs} / ${summary.totalBoqs}`}
-          />
-          <DashboardCard
-            icon={<ClipboardList className="text-indigo-500" />}
-            label="IN Cameras (Installed / Total)"
-            value={`${summary.installedInCameras} / ${summary.totalInCameras}`}
-          />
-          <DashboardCard
-            icon={<ClipboardList className="text-orange-500" />}
-            label="OUT Cameras (Installed / Total)"
-            value={`${summary.installedOutCameras} / ${summary.totalOutCameras}`}
-          />
+          {Object.keys(summary).length === 0 ? (
+            <Skeleton active paragraph={{ rows: 2 }} />
+          ) : (
+            <>
+              <DashboardCard
+                icon={<MapPin className="text-indigo-500" />}
+                label="Total Assemblies"
+                value={summary.totalAssemblies}
+              />
+              <DashboardCard
+                icon={<FileSpreadsheet className="text-amber-500" />}
+                label="Total Locations"
+                value={summary.totalLocations}
+              />
+              <DashboardCard
+                icon={<ClipboardList className="text-green-500" />}
+                label="Surveys (Raised / Total)"
+                value={`${summary.raisedSurveys} / ${summary.totalSurveys}`}
+              />
+              <DashboardCard
+                icon={<BarChart3 className="text-blue-500" />}
+                label="BOQs (Raised / Total)"
+                value={`${summary.raisedBoqs} / ${summary.totalBoqs}`}
+              />
+              <DashboardCard
+                icon={<ClipboardList className="text-indigo-500" />}
+                label="IN Cameras (Installed / Total)"
+                value={`${summary.installedInCameras} / ${summary.totalInCameras}`}
+              />
+              <DashboardCard
+                icon={<ClipboardList className="text-orange-500" />}
+                label="OUT Cameras (Installed / Total)"
+                value={`${summary.installedOutCameras} / ${summary.totalOutCameras}`}
+              />
+            </>
+          )}
         </div>
 
         {/* Assemblies Table */}
@@ -267,8 +289,14 @@ export default function DistrictCoordinatorDashboardPage() {
           <h2 className="text-lg font-semibold mb-4 text-gray-700">
             Assemblies Summary
           </h2>
-          <div className=" w-full overflow-x-auto">
+          {partialLoading && (
+            <div className="text-sm text-gray-400 mb-3">
+              Loading assembly data...
+            </div>
+          )}
+          <div className="w-full overflow-x-auto">
             <Table
+              loading={partialLoading}
               dataSource={assemblies}
               pagination={false}
               rowKey="id"
