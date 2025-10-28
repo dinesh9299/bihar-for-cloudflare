@@ -1,0 +1,5 @@
+name = "bihar-for-cloudflare"
+compatibility_date = "2024-04-01"
+
+# Cloudflare Pages expects this output folder:
+pages_build_output_dir = ".vercel/output/static"
