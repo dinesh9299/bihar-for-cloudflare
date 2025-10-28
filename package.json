@@ -7,6 +7,7 @@
     "dev": "next dev -H 0.0.0.0 -p 4000",
     "lint": "next lint",
     "start": "next start"
+    "postbuild": "next export"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
